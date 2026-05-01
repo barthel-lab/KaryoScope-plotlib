@@ -9,6 +9,15 @@ Modules:
     theme:       dark / light visual themes (background, text, line, font defaults)
 """
 
-from . import chromosomes, colors, coords, fonts, io, theme
+from . import chromosomes, colors, coords, fonts, io, sample_metadata, text, theme
 
-__all__ = ["chromosomes", "colors", "coords", "fonts", "io", "theme"]
+__all__ = [
+    "chromosomes",
+    "colors",
+    "coords",
+    "fonts",
+    "io",
+    "sample_metadata",
+    "text",
+    "theme",
+]
