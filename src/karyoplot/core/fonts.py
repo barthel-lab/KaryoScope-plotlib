@@ -1,13 +1,86 @@
-"""Font registration for Barthel brand fonts (Basic Sans, Bicyclette).
+"""Font registration for KaryoScope plots.
 
-Consolidates the 22 near-identical inline font-registration blocks that
-pull from `~/Documents/Barthel-Custom-Powerpoint-Theme/fonts/`.
+The library defaults to the generic CSS ``sans-serif`` family so plots
+work without any extra font files. The optional Barthel brand fonts
+(Basic Sans, Bicyclette) can be registered with :func:`register_fonts`
+when available — a silent no-op if the font directory is missing.
 
-Populated in Phase 2.
+Examples:
+    >>> from karyoplot.core import fonts
+    >>> registered = fonts.register_fonts()      # quiet, returns list
+    >>> fonts.is_available("Basic Sans")          # check before using
 """
 
-# Phase 2 will fill this with:
-#   - FONT_DIR: pathlib.Path
-#   - register_fonts(font_dir=None) -> list[str]   # returns registered family names
-#   - set_default_font(name="Basic Sans")
-#   - is_registered(family) -> bool
+from __future__ import annotations
+
+import os
+from pathlib import Path
+
+DEFAULT_FONT_FAMILY = "sans-serif"
+
+BARTHEL_FONT_DIR = Path.home() / "Documents" / "Barthel-Custom-Powerpoint-Theme" / "fonts"
+
+BARTHEL_FONT_FAMILIES = ("Basic Sans", "Bicyclette")
+
+
+def register_fonts(font_dir: str | os.PathLike | None = None) -> list[str]:
+    """Register Barthel brand fonts with matplotlib if available.
+
+    Args:
+        font_dir: Directory containing ``BasicSans-*.otf`` and/or
+            ``Bicyclette-*.otf`` files. Defaults to
+            ``~/Documents/Barthel-Custom-Powerpoint-Theme/fonts``.
+
+    Returns:
+        List of font family names that were registered. Empty list
+        if matplotlib is not importable or the directory is missing.
+    """
+    try:
+        import matplotlib.font_manager as fm
+    except ImportError:
+        return []
+
+    path = Path(font_dir) if font_dir is not None else BARTHEL_FONT_DIR
+    if not path.exists():
+        return []
+
+    registered: set[str] = set()
+    for pattern in ("BasicSans-*.otf", "Bicyclette-*.otf"):
+        for font_file in path.glob(pattern):
+            try:
+                fm.fontManager.addfont(str(font_file))
+                family = fm.FontProperties(fname=str(font_file)).get_name()
+                registered.add(family)
+            except Exception:
+                continue
+    return sorted(registered)
+
+
+def set_default_font(name: str = DEFAULT_FONT_FAMILY) -> None:
+    """Set matplotlib's default font family.
+
+    No-op if matplotlib is not installed.
+    """
+    try:
+        import matplotlib as mpl
+    except ImportError:
+        return
+    mpl.rcParams["font.family"] = name
+
+
+def is_available(family: str) -> bool:
+    """Return True if ``family`` is currently registered with matplotlib."""
+    try:
+        import matplotlib.font_manager as fm
+    except ImportError:
+        return False
+    return any(f.name == family for f in fm.fontManager.ttflist)
+
+
+def resolve_family(preferred: str = "Basic Sans") -> str:
+    """Return ``preferred`` if registered, else ``DEFAULT_FONT_FAMILY``.
+
+    Useful for plotting code that wants to opt in to Barthel fonts
+    when present without forcing them as a hard dependency.
+    """
+    return preferred if is_available(preferred) else DEFAULT_FONT_FAMILY
