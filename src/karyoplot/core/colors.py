@@ -43,6 +43,223 @@ def qualitative_palette(n: int, palette: tuple[str, ...] = TAB20) -> list[str]:
     return [palette[i % len(palette)] for i in range(n)]
 
 
+# ----------------------------------------------------------------------------
+# KaryoScope featureset palette loader
+# ----------------------------------------------------------------------------
+
+# A "section" is a tuple ``(header_or_None, [feature_names])`` for legend grouping.
+# Sections are introduced by ``# Header`` comment lines in the colors file.
+PaletteSection = tuple[str | None, list[str]]
+
+
+def load_palette_file(
+    file_path: str | os.PathLike,
+    *,
+    parse_sections: bool = False,
+    suffix_both_ways: bool = False,
+    initial: dict | None = None,
+    value_format: str = "hex",
+    track_order: bool = False,
+):
+    """Load a single ``{database}.{featureset}.colors.txt`` file.
+
+    Subsumes the per-file parsing logic that was previously duplicated across
+    ``KaryoScope_cluster_plot.py``, ``plot_reads.py``, ``telogator_reads_viz.py``,
+    ``visualize_translocation_reads.py``, and
+    ``KaryoScope_assembly_contig_zoom_plot.py``.
+
+    Args:
+        file_path: Path to the TSV (whitespace-separated, two columns:
+            ``feature``, ``hex_color``). Lines starting with ``#`` are
+            treated as comments; their text after the ``#`` becomes a section
+            header when ``parse_sections=True``. The ``feature`` literal
+            header line is auto-skipped.
+        parse_sections: If ``True``, parse ``# Header`` comment lines as
+            section headers and return ``(palette, sections)`` where
+            ``sections`` is a list of ``(header_or_None, [features])`` tuples
+            for legend grouping. If no sections are found, the entire palette
+            is wrapped in a single ``(None, [...])`` section. Default ``False``.
+        suffix_both_ways: If ``True``, add bidirectional ``_specific`` mapping —
+            ``foo_specific`` and bare ``foo`` both point at the same color.
+            If ``False``, only the bare-from-suffix direction is added (matches
+            the legacy multi-file loaders). Default ``False``.
+        initial: Optional dict to initialize the palette with (for "novel" /
+            "unknown" sentinels). Keys may be plain hex strings or
+            ``(color, opacity)`` tuples — must match ``value_format``.
+        value_format: ``"hex"`` returns bare hex strings (``"#RRGGBB"``);
+            ``"tuple"`` returns ``(color, 1.0)`` tuples (legacy multi-file
+            shape). Default ``"hex"``.
+        track_order: If ``True``, also returns the list of features in file
+            order (excluding the ``feature`` header). Default ``False``.
+
+    Returns:
+        Depending on flags, one of:
+
+        * ``palette`` — dict of feature → hex (or tuple).
+        * ``(palette, sections)`` — when ``parse_sections=True``.
+        * ``(palette, order)`` — when ``track_order=True``.
+        * ``(palette, sections, order)`` — when both flags are set.
+
+        If the file does not exist, returns an empty palette (or empty plus
+        ``initial`` if provided), no sections, no order. No exception raised.
+    """
+    if value_format not in ("hex", "tuple"):
+        raise ValueError(f"value_format must be 'hex' or 'tuple', got {value_format!r}")
+
+    palette: dict = dict(initial) if initial else {}
+    sections: list[PaletteSection] = []
+    order: list[str] = []
+
+    if not os.path.exists(file_path):
+        return _palette_return(palette, sections, order, parse_sections, track_order)
+
+    current_header: str | None = None
+    current_features: list[str] = []
+    has_section_marker = False
+    import re as _re
+
+    def _wrap(color: str):
+        return (color, 1.0) if value_format == "tuple" else color
+
+    with open(file_path, "r") as f:
+        for line in f:
+            stripped = line.strip()
+            if parse_sections:
+                m = _re.match(r"^#\s+(.+)", stripped)
+                if m:
+                    if current_features:
+                        sections.append((current_header, current_features))
+                    current_header = m.group(1).strip()
+                    current_features = []
+                    has_section_marker = True
+                    continue
+            elif stripped.startswith("#"):
+                continue  # plain comment — skip without recording
+
+            parts = stripped.split()
+            if len(parts) < 2:
+                continue
+            if parts[0].lower() == "feature":
+                continue
+
+            feature, color = parts[0], parts[1]
+            palette[feature] = _wrap(color)
+            order.append(feature)
+            if parse_sections:
+                current_features.append(feature)
+
+            # Reverse mapping: feature_specific → bare feature
+            if feature.endswith("_specific"):
+                palette[feature[: -len("_specific")]] = _wrap(color)
+            # Forward mapping (only when caller asks for both directions)
+            if suffix_both_ways:
+                if not feature.endswith("_specific") and not feature.endswith("_multigroup1"):
+                    palette[feature + "_specific"] = _wrap(color)
+
+    if parse_sections:
+        if current_features:
+            sections.append((current_header, current_features))
+        if not has_section_marker and palette:
+            # No section markers found — wrap everything in a single None-header section
+            sections = [(None, list(palette.keys()))]
+
+    return _palette_return(palette, sections, order, parse_sections, track_order)
+
+
+def _palette_return(palette, sections, order, parse_sections: bool, track_order: bool):
+    if parse_sections and track_order:
+        return palette, sections, order
+    if parse_sections:
+        return palette, sections
+    if track_order:
+        return palette, order
+    return palette
+
+
+def load_featureset_palettes(
+    colors_dir: str | os.PathLike,
+    database: str,
+    featuresets,
+    *,
+    on_missing: str = "warn",
+    value_format: str = "tuple",
+    background: str | None = None,
+    track_order: bool = False,
+):
+    """Multi-file wrapper: load one ``{database}.{fs}.colors.txt`` per featureset.
+
+    Subsumes the multi-file loaders in ``KaryoScope_cluster_plot.py``,
+    ``visualize_translocation_reads.py``, and
+    ``KaryoScope_assembly_contig_zoom_plot.py``.
+
+    Args:
+        colors_dir: Directory containing the per-featureset color files.
+        database: Database token (e.g. ``"KS_human_CHM13_v2"``).
+        featuresets: Iterable of featureset names.
+        on_missing: ``"warn"`` (print warning, fall back to defaults if any),
+            ``"error"`` (write to stderr and ``sys.exit(1)`` — matches
+            cluster_plot's strict mode), ``"silent"`` (empty dict, no output).
+            Default ``"warn"``.
+        value_format: ``"hex"`` or ``"tuple"``; passed through to
+            :func:`load_palette_file`.
+        background: If given (``"black"`` or ``"white"``), each featureset
+            dict is pre-seeded with ``"novel"`` and ``"unknown"`` defaults
+            matching the assembly_contig_zoom convention: ``novel`` matches
+            the background (so novel features render invisibly), ``unknown``
+            is grey ``#808080``. If ``None``, no defaults are seeded.
+            Default ``None``.
+        track_order: If ``True``, also returns ``{fs: [features in file order]}``.
+
+    Returns:
+        ``{fs: palette}`` or ``({fs: palette}, {fs: order})`` if track_order.
+    """
+    import sys
+
+    out: dict = {}
+    orders: dict = {}
+
+    if background is not None:
+        # Legacy assembly_contig_zoom convention: novel matches the background
+        # (so unmapped features blend in invisibly).
+        novel_color = "#ffffff" if background == "white" else "#000000"
+        if value_format == "tuple":
+            seed = {"novel": (novel_color, 1.0), "unknown": ("#808080", 1.0)}
+        else:
+            seed = {"novel": novel_color, "unknown": "#808080"}
+    else:
+        seed = None
+
+    for fs in featuresets:
+        path = os.path.join(colors_dir, f"{database}.{fs}.colors.txt")
+        if not os.path.exists(path):
+            if on_missing == "error":
+                sys.stderr.write(f"Error: Colors file not found: {path}\n")
+                sys.exit(1)
+            if on_missing == "warn":
+                print(f"  Warning: Colors file not found: {path}")
+            out[fs] = dict(seed) if seed else {}
+            orders[fs] = []
+            continue
+
+        result = load_palette_file(
+            path,
+            initial=seed,
+            value_format=value_format,
+            track_order=track_order,
+        )
+        if track_order:
+            palette, order = result
+            out[fs] = palette
+            orders[fs] = order
+        else:
+            out[fs] = result
+            orders[fs] = []
+
+    if track_order:
+        return out, orders
+    return out
+
+
 # Barthel brand palette (per global CLAUDE.md)
 BARTHEL: dict[str, str] = {
     "black": "#000000",
