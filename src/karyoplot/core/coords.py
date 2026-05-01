@@ -70,3 +70,44 @@ class PixelScale:
     def span_pixels(self, start: int, end: int) -> int:
         """Pixel span (positive integer) between two genome positions."""
         return self.pos_to_pixel(end) - self.pos_to_pixel(start)
+
+
+# ----------------------------------------------------------------------------
+# Scale-bar bp picker
+# ----------------------------------------------------------------------------
+
+DEFAULT_SCALE_OPTIONS: tuple[int, ...] = (
+    100, 200, 500, 1_000, 2_000, 5_000, 10_000, 20_000, 50_000,
+    100_000, 200_000, 500_000, 1_000_000, 2_000_000, 5_000_000,
+)
+
+
+def pick_round_scale_bp(
+    ratio: float,
+    *,
+    target_min_px: float = 50,
+    target_max_px: float = 150,
+    options: tuple[int, ...] = DEFAULT_SCALE_OPTIONS,
+    fallback_bp: int = 5_000,
+) -> int:
+    """Pick a "round" scale-bar length in bp that renders within a target px window.
+
+    Returns the first value from ``options`` whose pixel width
+    (``bp * ratio``) lies in ``[target_min_px, target_max_px]``. Falls back
+    to ``fallback_bp`` if none qualify.
+
+    Used by scale-bar drawing routines that auto-size their bar based on
+    the current pixels-per-bp ratio (e.g. ``KaryoScope_cluster_plot``
+    chooses from 1/2/5/10/20 kb to fit a 50–150 px window).
+
+    Examples:
+        >>> pick_round_scale_bp(0.01)          # ratio=0.01 px/bp → 5 kb fits
+        5000
+        >>> pick_round_scale_bp(0.001)         # zoomed out → 50 kb fits
+        50000
+    """
+    for bp in options:
+        width_px = bp * ratio
+        if target_min_px <= width_px <= target_max_px:
+            return bp
+    return fallback_bp
