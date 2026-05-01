@@ -210,3 +210,47 @@ def test_svg_to_png_missing_tool_raises_when_requested(monkeypatch, tmp_path: Pa
     monkeypatch.setattr(export.subprocess, "run", fake_run)
     with pytest.raises(export.RsvgConvertMissingError):
         export.svg_to_png(svg, raise_on_error=True)
+
+
+def test_svg_to_png_scale_vs_dpi_mutually_exclusive(monkeypatch, tmp_path: Path):
+    from karyoplot.svg import export
+
+    svg = tmp_path / "test.svg"
+    svg.write_text('<svg xmlns="http://www.w3.org/2000/svg"></svg>')
+    monkeypatch.setattr(export.subprocess, "run", lambda *a, **kw: None)
+    with pytest.raises(ValueError):
+        export.svg_to_png(svg, scale=4, dpi=300)
+
+
+def test_svg_to_png_dpi_emits_d_and_p_flags(monkeypatch, tmp_path: Path):
+    from karyoplot.svg import export
+
+    svg = tmp_path / "test.svg"
+    svg.write_text('<svg xmlns="http://www.w3.org/2000/svg"></svg>')
+
+    captured = {}
+    def fake_run(cmd, **kwargs):
+        captured["cmd"] = cmd
+
+    monkeypatch.setattr(export.subprocess, "run", fake_run)
+    export.svg_to_png(svg, dpi=300)
+    assert "-d" in captured["cmd"] and "-p" in captured["cmd"]
+    assert "300" in captured["cmd"]
+    assert "-z" not in captured["cmd"]
+
+
+def test_svg_to_png_scale_emits_z_flag(monkeypatch, tmp_path: Path):
+    from karyoplot.svg import export
+
+    svg = tmp_path / "test.svg"
+    svg.write_text('<svg xmlns="http://www.w3.org/2000/svg"></svg>')
+
+    captured = {}
+    def fake_run(cmd, **kwargs):
+        captured["cmd"] = cmd
+
+    monkeypatch.setattr(export.subprocess, "run", fake_run)
+    export.svg_to_png(svg, scale=4)
+    assert "-z" in captured["cmd"]
+    assert "4" in captured["cmd"]
+    assert "-d" not in captured["cmd"]
