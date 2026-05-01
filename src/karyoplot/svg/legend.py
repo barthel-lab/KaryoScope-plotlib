@@ -115,7 +115,7 @@ def _draw_hexamer_legend_horizontal(d, x_pos, y_pos, text_color, font_family):
 # Multi-track grouped legend (drawn alongside a plot)
 # --------------------------------------------------------------------
 
-def _strip_label_suffixes(name: str) -> str:
+def strip_label_suffixes(name: str) -> str:
     """Clean a feature name into a legend label.
 
     Strips ``_specific`` and ``_multigroup1`` suffixes, replaces
@@ -126,6 +126,10 @@ def _strip_label_suffixes(name: str) -> str:
             name = name[: -len(suffix)]
             break
     return name.replace("_", " ")
+
+
+# Backwards-compatible private alias (kept for the existing tests)
+_strip_label_suffixes = strip_label_suffixes
 
 
 def draw_grouped_legend(

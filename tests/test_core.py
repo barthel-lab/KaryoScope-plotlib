@@ -90,6 +90,23 @@ def test_barthel_palette_keys():
         assert key in BARTHEL
 
 
+def test_tab10_tab20_canonical():
+    from karyoplot.core.colors import TAB10, TAB20
+
+    assert len(TAB10) == 10
+    assert len(TAB20) == 20
+    assert TAB10[0] == "#1f77b4"
+    assert TAB20[0] == "#1f77b4"
+    assert TAB20[1] == "#aec7e8"   # tab20 has paired light/dark
+
+
+def test_qualitative_palette_cycles():
+    from karyoplot.core.colors import TAB10, qualitative_palette
+
+    assert qualitative_palette(3, TAB10) == list(TAB10[:3])
+    assert qualitative_palette(12, TAB10) == list(TAB10) + list(TAB10[:2])
+
+
 # ----- coords -----
 
 def test_pixel_scale_full_mode():
@@ -140,6 +157,15 @@ def test_resolve_family_falls_back():
 
     # Some random unregistered family must fall back to sans-serif
     assert resolve_family("ZZZ_NotARealFont_ZZZ") == DEFAULT_FONT_FAMILY
+
+
+def test_pil_font_returns_imagefont_for_unknown_family():
+    from karyoplot.core.fonts import pil_font
+    from PIL import ImageFont
+
+    # Unknown family + non-existent fallback -> always falls back to default
+    f = pil_font(12, family="NotAFamily", fallback="DefinitelyNotAFont")
+    assert isinstance(f, (ImageFont.ImageFont, ImageFont.FreeTypeFont))
 
 
 # ----- theme -----

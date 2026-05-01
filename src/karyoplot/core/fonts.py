@@ -84,3 +84,43 @@ def resolve_family(preferred: str = "Basic Sans") -> str:
     when present without forcing them as a hard dependency.
     """
     return preferred if is_available(preferred) else DEFAULT_FONT_FAMILY
+
+
+_BARTHEL_PIL_FILES: dict[str, str] = {
+    "Basic Sans": "BasicSans-Regular.otf",
+    "Basic Sans Bold": "BasicSans-Bold.otf",
+    "Basic Sans Italic": "BasicSans-Italic.otf",
+    "Bicyclette": "Bicyclette-Regular.otf",
+    "Bicyclette Bold": "Bicyclette-Bold.otf",
+}
+
+
+def pil_font(size: int, family: str = "Basic Sans", fallback: str = "Arial"):
+    """Load a PIL ``ImageFont`` with a Barthel-first / system fallback chain.
+
+    Used by raster-output scripts (PNG / GIF / MP4 frames) such as
+    ``KaryoScope_plot_reads.py``. Tries:
+
+    1. ``BARTHEL_FONT_DIR / <font_file>`` for the requested ``family``.
+    2. The system font named ``fallback`` (e.g. ``Arial``).
+    3. Pillow's bundled default (always succeeds).
+
+    Returns the loaded ``ImageFont`` instance. Never raises.
+    """
+    from PIL import ImageFont  # imported lazily so karyoplot.core.fonts has no PIL dep
+
+    font_file = _BARTHEL_PIL_FILES.get(family)
+    if font_file is not None:
+        path = BARTHEL_FONT_DIR / font_file
+        try:
+            return ImageFont.truetype(str(path), size)
+        except (OSError, IOError):
+            pass
+
+    if fallback:
+        try:
+            return ImageFont.truetype(fallback, size)
+        except (OSError, IOError):
+            pass
+
+    return ImageFont.load_default()
