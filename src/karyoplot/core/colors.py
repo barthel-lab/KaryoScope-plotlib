@@ -81,17 +81,14 @@ def load_palette_file(
     file_path: str | os.PathLike,
     *,
     parse_sections: bool = False,
-    suffix_both_ways: bool = False,
     initial: dict | None = None,
     value_format: str = "hex",
     track_order: bool = False,
 ):
     """Load a single ``{database}.{featureset}.colors.txt`` file.
 
-    Subsumes the per-file parsing logic that was previously duplicated across
-    ``KaryoScope_cluster_plot.py``, ``plot_reads.py``, ``telogator_reads_viz.py``,
-    ``visualize_translocation_reads.py``, and
-    ``KaryoScope_assembly_contig_zoom_plot.py``.
+    Subsumes the per-file parsing logic that was previously duplicated across several
+    legacy KaryoScope plotting scripts.
 
     Args:
         file_path: Path to the TSV (whitespace-separated, two columns:
@@ -104,10 +101,6 @@ def load_palette_file(
             ``sections`` is a list of ``(header_or_None, [features])`` tuples
             for legend grouping. If no sections are found, the entire palette
             is wrapped in a single ``(None, [...])`` section. Default ``False``.
-        suffix_both_ways: If ``True``, add bidirectional ``_specific`` mapping —
-            ``foo_specific`` and bare ``foo`` both point at the same color.
-            If ``False``, only the bare-from-suffix direction is added (matches
-            the legacy multi-file loaders). Default ``False``.
         initial: Optional dict to initialize the palette with (for "novel" /
             "unknown" sentinels). Keys may be plain hex strings or
             ``(color, opacity)`` tuples — must match ``value_format``.
@@ -172,15 +165,6 @@ def load_palette_file(
             order.append(feature)
             if parse_sections:
                 current_features.append(feature)
-
-            # Reverse mapping: feature_specific → bare feature
-            if feature.endswith("_specific"):
-                palette[feature[: -len("_specific")]] = _wrap(color)
-            # Forward mapping (only when caller asks for both directions)
-            if suffix_both_ways and not (
-                feature.endswith("_specific") or feature.endswith("_multigroup1")
-            ):
-                palette[feature + "_specific"] = _wrap(color)
 
     if parse_sections:
         if current_features:

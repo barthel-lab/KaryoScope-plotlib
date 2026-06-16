@@ -92,12 +92,12 @@ def test_draw_hexamer_legend_vertical_returns_y():
     assert len(d.elements) > 0
 
 
-def test_strip_label_suffixes():
-    from karyoplot.svg.legend import _strip_label_suffixes
+def test_clean_label():
+    from karyoplot.svg.legend import clean_label
 
-    assert _strip_label_suffixes("chr13_specific") == "chr13"
-    assert _strip_label_suffixes("autosome_multigroup1") == "autosome"
-    assert _strip_label_suffixes("plain_name") == "plain name"
+    assert clean_label("plain_name") == "plain name"
+    assert clean_label("canonical_telomere") == "canonical telomere"
+    assert clean_label("chr13") == "chr13"
 
 
 def test_draw_grouped_legend_column_layout():
@@ -175,7 +175,7 @@ def test_featureset_legend_items_filters_and_orders():
 def test_merge_by_color_keeps_shortest_label():
     from karyoplot.svg.legend import merge_by_color
 
-    items = [("chr13_specific", "#FF0000"), ("acrocentric_long", "#FF0000")]
+    items = [("chr13", "#FF0000"), ("acrocentric_long", "#FF0000")]
     merged = merge_by_color(items)
     assert merged == [("chr13", "#FF0000")]
 
@@ -183,8 +183,8 @@ def test_merge_by_color_keeps_shortest_label():
 def test_merge_by_color_with_overrides():
     from karyoplot.svg.legend import merge_by_color
 
-    items = [("chr13_specific", "#FF0000"), ("chr14_specific", "#FF0000")]
-    merged = merge_by_color(items, label_overrides={"chr13_specific": "acrocentric"})
+    items = [("chr13", "#FF0000"), ("chr14", "#FF0000")]
+    merged = merge_by_color(items, label_overrides={"chr13": "acrocentric"})
     assert merged == [("acrocentric", "#FF0000")]
 
 

@@ -154,21 +154,9 @@ def _draw_hexamer_legend_horizontal(d, x_pos, y_pos, text_color, font_family):
 # --------------------------------------------------------------------
 
 
-def strip_label_suffixes(name: str) -> str:
-    """Clean a feature name into a legend label.
-
-    Strips ``_specific`` and ``_multigroup1`` suffixes, replaces
-    underscores with spaces.
-    """
-    for suffix in ("_specific", "_multigroup1"):
-        if name.endswith(suffix):
-            name = name[: -len(suffix)]
-            break
+def clean_label(name: str) -> str:
+    """Clean a feature name into a legend label (underscores -> spaces)."""
     return name.replace("_", " ")
-
-
-# Backwards-compatible private alias (kept for the existing tests)
-_strip_label_suffixes = strip_label_suffixes
 
 
 def draw_grouped_legend(
@@ -268,7 +256,7 @@ def _draw_column_legend(
             )
             d.append(
                 draw.Text(
-                    _strip_label_suffixes(feature),
+                    clean_label(feature),
                     font_size=9,
                     x=current_x + 24,
                     y=current_y,
@@ -322,7 +310,7 @@ def _draw_vertical_legend(
             )
             d.append(
                 draw.Text(
-                    _strip_label_suffixes(feature),
+                    clean_label(feature),
                     font_size=7,
                     x=x_pos + 24,
                     y=current_y,
@@ -376,9 +364,7 @@ def merge_by_color(
     for color, features in color_groups.items():
         label = next((overrides[f] for f in features if f in overrides), None)
         if label is None:
-            cleaned = sorted(
-                ((_strip_label_suffixes(f), f) for f in features), key=lambda x: len(x[0])
-            )
+            cleaned = sorted(((clean_label(f), f) for f in features), key=lambda x: len(x[0]))
             label = cleaned[0][0]
         merged.append((label, color))
     return merged
@@ -419,7 +405,7 @@ def featureset_legend_items(
         include: If given, keep only these feature names.
         exclude: If given, drop these feature names (applied after ``include``).
         clean_labels: If ``True`` (default), feature labels are passed through
-            :func:`strip_label_suffixes`; if ``False``, names are shown verbatim.
+            :func:`clean_label` (underscores -> spaces); if ``False``, shown verbatim.
 
     Returns:
         Flat list of ``(label, color, is_header)`` rows. Feature sets that end up
@@ -438,7 +424,7 @@ def featureset_legend_items(
                 continue
             if exclude is not None and feature in exclude:
                 continue
-            label = strip_label_suffixes(feature) if clean_labels else feature
+            label = clean_label(feature) if clean_labels else feature
             rows.append((label, color, False))
         if rows:
             items.append((labels.get(fs, fs), "", True))
