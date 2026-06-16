@@ -5,15 +5,20 @@ from pathlib import Path
 
 import pytest
 
-
 # ----- chromosomes -----
+
 
 def test_chrom_sort_key_orders_canonical():
     from karyoplot.core.chromosomes import chrom_sort_key
 
     chroms = ["chrY", "chr10", "chr1", "chrX", "chr2", "chrM"]
     assert sorted(chroms, key=chrom_sort_key) == [
-        "chr1", "chr2", "chr10", "chrX", "chrY", "chrM",
+        "chr1",
+        "chr2",
+        "chr10",
+        "chrX",
+        "chrY",
+        "chrM",
     ]
 
 
@@ -47,6 +52,7 @@ def test_reference_lookup_chm13():
 
 
 # ----- colors -----
+
 
 def test_load_palette_basic(tmp_path: Path):
     from karyoplot.core.colors import load_palette
@@ -97,7 +103,7 @@ def test_tab10_tab20_canonical():
     assert len(TAB20) == 20
     assert TAB10[0] == "#1f77b4"
     assert TAB20[0] == "#1f77b4"
-    assert TAB20[1] == "#aec7e8"   # tab20 has paired light/dark
+    assert TAB20[1] == "#aec7e8"  # tab20 has paired light/dark
 
 
 def test_qualitative_palette_cycles():
@@ -109,19 +115,20 @@ def test_qualitative_palette_cycles():
 
 # ----- coords -----
 
+
 def test_pixel_scale_full_mode():
     from karyoplot.core.coords import PixelScale
 
     s = PixelScale(mode="full", origin=10)
     assert s.pos_to_pixel(0) == 10
-    assert s.pos_to_pixel(1_000_000) == 14   # 4 px per Mb + origin
+    assert s.pos_to_pixel(1_000_000) == 14  # 4 px per Mb + origin
 
 
 def test_pixel_scale_subtelomere_mode():
     from karyoplot.core.coords import PixelScale
 
     s = PixelScale(mode="subtelomere")
-    assert s.pos_to_pixel(3000) == 10        # 3000 * (1/300)
+    assert s.pos_to_pixel(3000) == 10  # 3000 * (1/300)
 
 
 def test_pixel_scale_custom_factor():
@@ -140,6 +147,7 @@ def test_pixel_scale_unknown_mode_raises():
 
 # ----- fonts -----
 
+
 def test_register_fonts_missing_dir(tmp_path: Path):
     from karyoplot.core.fonts import register_fonts
 
@@ -153,15 +161,16 @@ def test_default_font_family_is_sans_serif():
 
 
 def test_resolve_family_falls_back():
-    from karyoplot.core.fonts import resolve_family, DEFAULT_FONT_FAMILY
+    from karyoplot.core.fonts import DEFAULT_FONT_FAMILY, resolve_family
 
     # Some random unregistered family must fall back to sans-serif
     assert resolve_family("ZZZ_NotARealFont_ZZZ") == DEFAULT_FONT_FAMILY
 
 
 def test_pil_font_returns_imagefont_for_unknown_family():
-    from karyoplot.core.fonts import pil_font
     from PIL import ImageFont
+
+    from karyoplot.core.fonts import pil_font
 
     # Unknown family + non-existent fallback -> always falls back to default
     f = pil_font(12, family="NotAFamily", fallback="DefinitelyNotAFont")
@@ -169,6 +178,7 @@ def test_pil_font_returns_imagefont_for_unknown_family():
 
 
 # ----- theme -----
+
 
 def test_dark_theme_matches_cluster_plot_black():
     from karyoplot.core import theme
@@ -202,6 +212,7 @@ def test_line_color_for_background():
 
 # ----- io -----
 
+
 def test_smart_open_plain(tmp_path: Path):
     from karyoplot.core.io import smart_open
 
@@ -225,11 +236,7 @@ def test_load_bed_basic_and_filter(tmp_path: Path):
     from karyoplot.core.io import load_bed
 
     p = tmp_path / "test.bed"
-    p.write_text(
-        "chr1\t100\t200\trepeat\n"
-        "chr1\t300\t400\tgene\n"
-        "chr2\t500\t600\trepeat\n"
-    )
+    p.write_text("chr1\t100\t200\trepeat\nchr1\t300\t400\tgene\nchr2\t500\t600\trepeat\n")
     df = load_bed(p)
     assert list(df.columns)[:4] == ["chrom", "start", "end", "name"]
     assert len(df) == 3

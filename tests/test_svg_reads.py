@@ -1,15 +1,13 @@
 """Unit tests for karyoplot.svg.reads (rasterization primitives)."""
 
-import pytest
-
 from karyoplot.svg.reads import (
     features_to_pixels_direct,
     rasterize_features,
     smooth_features_to_pixels,
 )
 
-
 # ----- smooth_features_to_pixels -----
+
 
 def test_smooth_empty_returns_empty():
     assert smooth_features_to_pixels([], 100, 0.01) == []
@@ -28,7 +26,7 @@ def test_smooth_single_feature_full_bar():
 def test_smooth_run_length_encodes_adjacent_same_color():
     feats = [(0, 500, "#FF0000", 1.0), (500, 1000, "#FF0000", 1.0)]
     out = smooth_features_to_pixels(feats, 10, 0.01)
-    assert len(out) == 1   # collapsed into one run
+    assert len(out) == 1  # collapsed into one run
     assert out[0]["scaled_stop"] == 10
 
 
@@ -48,10 +46,11 @@ def test_smooth_oversample_lets_subpixel_features_survive():
     no_os_colors = {r["color"] for r in no_os}
     with_os_colors = {r["color"] for r in with_os}
     assert "#FF0000" not in no_os_colors  # outvoted at native resolution
-    assert "#FF0000" in with_os_colors    # survives with oversampling
+    assert "#FF0000" in with_os_colors  # survives with oversampling
 
 
 # ----- features_to_pixels_direct -----
+
 
 def test_direct_empty_returns_empty():
     assert features_to_pixels_direct([], 100, 0.01) == []
@@ -77,13 +76,13 @@ def test_direct_skip_min_flag_suppresses_floor():
     # 5th element True = skip_min — feature stays at natural width even if
     # smaller than min_width.
     feats = [
-        (0, 10, "#FF0000", 1.0, True),    # natural 0.1px, no floor
+        (0, 10, "#FF0000", 1.0, True),  # natural 0.1px, no floor
         (10, 1000, "#00FF00", 1.0, False),
     ]
     out = features_to_pixels_direct(feats, 10, 0.01, min_width=0.5)
     red = next(r for r in out if r["color"] == "#FF0000")
     width = red["scaled_stop"] - red["scaled_start"]
-    assert width < 0.2   # close to natural 0.1, not floored to 0.5
+    assert width < 0.2  # close to natural 0.1, not floored to 0.5
 
 
 def test_direct_run_length_encoding():
@@ -100,6 +99,7 @@ def test_direct_total_does_not_exceed_bar_length():
 
 
 # ----- rasterize_features dispatcher -----
+
 
 def test_rasterize_dispatcher_transition_mode():
     feats = [(0, 1000, "#FF0000", 1.0)]

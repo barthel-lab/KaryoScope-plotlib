@@ -15,8 +15,6 @@ then iterates the per-comparison plots.
 
 from __future__ import annotations
 
-from typing import Dict
-
 import numpy as np
 import pandas as pd
 
@@ -25,7 +23,7 @@ from .types import ComparisonConfig
 
 
 def _arcsin_sqrt(pct):
-    """Arcsin-square-root transform for percentage values (0–100)."""
+    """Arcsin-square-root transform for percentage values (0-100)."""
     return np.arcsin(np.sqrt(np.clip(pct / 100.0, 0, 1)))
 
 
@@ -75,17 +73,20 @@ def plot_volcano(
 
     edge_c = fg_color(config.dark_mode)
     for i in range(len(fc_vals)):
-        ax.scatter(fc_vals[i], p_vals[i], color=colors[i],
-                   s=80, edgecolors=edge_c, linewidth=0.5, zorder=3)
+        ax.scatter(
+            fc_vals[i], p_vals[i], color=colors[i], s=80, edgecolors=edge_c, linewidth=0.5, zorder=3
+        )
 
     texts = [
-        ax.text(fc_vals[i], p_vals[i], labels[i], fontsize=9,
-                ha="center", va="center")
+        ax.text(fc_vals[i], p_vals[i], labels[i], fontsize=9, ha="center", va="center")
         for i in range(len(fc_vals))
     ]
 
     adjust_text(
-        texts, x=fc_vals, y=p_vals, ax=ax,
+        texts,
+        x=fc_vals,
+        y=p_vals,
+        ax=ax,
         force_text=(1.0, 2.0),
         force_points=(2.0, 2.0),
         force_explode=(1.5, 2.0),
@@ -106,17 +107,16 @@ def plot_volcano(
         dist = np.hypot(cx - pt_disp[0], cy - pt_disp[1])
         if dist > min_dist:
             ax.annotate(
-                "", xy=(fc_vals[i], p_vals[i]), xytext=txt.get_position(),
-                arrowprops=dict(arrowstyle="-", color=edge_c,
-                                lw=0.5, shrinkA=5, shrinkB=3),
+                "",
+                xy=(fc_vals[i], p_vals[i]),
+                xytext=txt.get_position(),
+                arrowprops=dict(arrowstyle="-", color=edge_c, lw=0.5, shrinkA=5, shrinkB=3),
             )
 
     cond_a = config.conditions[cond_a_name]
     cond_b = config.conditions[cond_b_name]
-    ax.set_xlabel(
-        f"log₂(fold change)\n{cond_a.label} enriched  |  {cond_b.label} enriched"
-    )
-    ax.set_ylabel("−log₁₀(p-value)")
+    ax.set_xlabel(f"log₂(fold change)\n{cond_a.label} enriched  |  {cond_b.label} enriched")
+    ax.set_ylabel("−log₁₀(p-value)")  # noqa: RUF001 — display label: minus sign pairs with log₂ above
     ax.set_title(config.name)
 
     max_fc = max(abs(fc_vals.min()), abs(fc_vals.max()), 1)
@@ -162,17 +162,41 @@ def plot_dot_strip(
         a_x = np.full(len(a_vals), x[i] - offset) + np.random.uniform(-0.06, 0.06, len(a_vals))
         b_x = np.full(len(b_vals), x[i] + offset) + np.random.uniform(-0.06, 0.06, len(b_vals))
 
-        ax.scatter(a_x, a_vals, color=cond_a.color, s=40,
-                   edgecolors=edge_c, linewidth=0.5, zorder=3, alpha=0.8)
-        ax.scatter(b_x, b_vals, color=cond_b.color, s=40,
-                   edgecolors=edge_c, linewidth=0.5, zorder=3, alpha=0.8)
+        ax.scatter(
+            a_x,
+            a_vals,
+            color=cond_a.color,
+            s=40,
+            edgecolors=edge_c,
+            linewidth=0.5,
+            zorder=3,
+            alpha=0.8,
+        )
+        ax.scatter(
+            b_x,
+            b_vals,
+            color=cond_b.color,
+            s=40,
+            edgecolors=edge_c,
+            linewidth=0.5,
+            zorder=3,
+            alpha=0.8,
+        )
 
-        ax.plot([x[i] - offset - 0.1, x[i] - offset + 0.1],
-                [a_vals.mean(), a_vals.mean()],
-                color=cond_a.color, linewidth=2, zorder=4)
-        ax.plot([x[i] + offset - 0.1, x[i] + offset + 0.1],
-                [b_vals.mean(), b_vals.mean()],
-                color=cond_b.color, linewidth=2, zorder=4)
+        ax.plot(
+            [x[i] - offset - 0.1, x[i] - offset + 0.1],
+            [a_vals.mean(), a_vals.mean()],
+            color=cond_a.color,
+            linewidth=2,
+            zorder=4,
+        )
+        ax.plot(
+            [x[i] + offset - 0.1, x[i] + offset + 0.1],
+            [b_vals.mean(), b_vals.mean()],
+            color=cond_b.color,
+            linewidth=2,
+            zorder=4,
+        )
 
     if not stats_df.empty:
         bracket_color = fg_color(config.dark_mode)
@@ -191,16 +215,38 @@ def plot_dot_strip(
             bracket_y = y_top + y_range * 0.04
 
             x_left, x_right = x[i] - offset, x[i] + offset
-            ax.plot([x_left, x_left], [bracket_y, bracket_y + tick_h],
-                    color=bracket_color, linewidth=0.8, zorder=5)
-            ax.plot([x_right, x_right], [bracket_y, bracket_y + tick_h],
-                    color=bracket_color, linewidth=0.8, zorder=5)
-            ax.plot([x_left, x_right], [bracket_y + tick_h, bracket_y + tick_h],
-                    color=bracket_color, linewidth=0.8, zorder=5)
+            ax.plot(
+                [x_left, x_left],
+                [bracket_y, bracket_y + tick_h],
+                color=bracket_color,
+                linewidth=0.8,
+                zorder=5,
+            )
+            ax.plot(
+                [x_right, x_right],
+                [bracket_y, bracket_y + tick_h],
+                color=bracket_color,
+                linewidth=0.8,
+                zorder=5,
+            )
+            ax.plot(
+                [x_left, x_right],
+                [bracket_y + tick_h, bracket_y + tick_h],
+                color=bracket_color,
+                linewidth=0.8,
+                zorder=5,
+            )
 
-            ax.text(x[i], bracket_y + tick_h + y_range * 0.01, label,
-                    ha="center", va="bottom", fontsize=7, fontstyle="italic",
-                    color=bracket_color)
+            ax.text(
+                x[i],
+                bracket_y + tick_h + y_range * 0.01,
+                label,
+                ha="center",
+                va="bottom",
+                fontsize=7,
+                fontstyle="italic",
+                color=bracket_color,
+            )
 
     ax.set_xticks(x)
     ax.set_xticklabels(fg_labels, rotation=45, ha="right")
@@ -212,7 +258,7 @@ def plot_dot_strip(
     tick_pcts = [0, 0.5, 2, 5, 10, 20, 50, 75, 100]
     tick_transformed = [_arcsin_sqrt(p) for p in tick_pcts]
     y_top = ax.get_ylim()[1]
-    tick_pcts = [p for p, t in zip(tick_pcts, tick_transformed) if t <= y_top * 1.05]
+    tick_pcts = [p for p, t in zip(tick_pcts, tick_transformed, strict=False) if t <= y_top * 1.05]
     tick_transformed = [t for t in tick_transformed if t <= y_top * 1.05]
     ax.set_yticks(tick_transformed)
     ax.set_yticklabels([f"{p:g}%" for p in tick_pcts])
@@ -266,24 +312,41 @@ def plot_lollipop(
 
         all_x = [a_mean, b_mean]
 
-        ax.plot([a_mean, b_mean], [y[i], y[i]], color=edge_c,
-                linewidth=1.0, zorder=2, alpha=0.5)
+        ax.plot([a_mean, b_mean], [y[i], y[i]], color=edge_c, linewidth=1.0, zorder=2, alpha=0.5)
 
         if len(a_vals) > 1:
             a_t = _arcsin_sqrt(a_vals)
             all_x.extend(a_t)
-            ax.scatter(a_t, np.full(len(a_t), y[i]), color=cond_a.color,
-                       s=20, edgecolors=edge_c, linewidth=0.3, zorder=3, alpha=0.5)
+            ax.scatter(
+                a_t,
+                np.full(len(a_t), y[i]),
+                color=cond_a.color,
+                s=20,
+                edgecolors=edge_c,
+                linewidth=0.3,
+                zorder=3,
+                alpha=0.5,
+            )
         if len(b_vals) > 1:
             b_t = _arcsin_sqrt(b_vals)
             all_x.extend(b_t)
-            ax.scatter(b_t, np.full(len(b_t), y[i]), color=cond_b.color,
-                       s=20, edgecolors=edge_c, linewidth=0.3, zorder=3, alpha=0.5)
+            ax.scatter(
+                b_t,
+                np.full(len(b_t), y[i]),
+                color=cond_b.color,
+                s=20,
+                edgecolors=edge_c,
+                linewidth=0.3,
+                zorder=3,
+                alpha=0.5,
+            )
 
-        ax.scatter(a_mean, y[i], color=cond_a.color, s=60,
-                   edgecolors=edge_c, linewidth=0.5, zorder=4)
-        ax.scatter(b_mean, y[i], color=cond_b.color, s=60,
-                   edgecolors=edge_c, linewidth=0.5, zorder=4)
+        ax.scatter(
+            a_mean, y[i], color=cond_a.color, s=60, edgecolors=edge_c, linewidth=0.5, zorder=4
+        )
+        ax.scatter(
+            b_mean, y[i], color=cond_b.color, s=60, edgecolors=edge_c, linewidth=0.5, zorder=4
+        )
 
         row_x_min[i] = min(all_x)
         row_x_max[i] = max(all_x)
@@ -298,7 +361,7 @@ def plot_lollipop(
     tick_pcts = [0, 0.5, 2, 5, 10, 20, 50, 75, 100]
     tick_transformed = [_arcsin_sqrt(p) for p in tick_pcts]
     x_top = ax.get_xlim()[1]
-    tick_pcts = [p for p, t in zip(tick_pcts, tick_transformed) if t <= x_top * 1.05]
+    tick_pcts = [p for p, t in zip(tick_pcts, tick_transformed, strict=False) if t <= x_top * 1.05]
     tick_transformed = [t for t in tick_transformed if t <= x_top * 1.05]
     ax.set_xticks(tick_transformed)
     ax.set_xticklabels([f"{p:g}%" for p in tick_pcts])
@@ -325,23 +388,39 @@ def plot_lollipop(
             p = row["pooled_fisher_p"].values[0]
             label = f"p = {p:.2e}" if p <= 0.05 else "p = NS"
 
-            txt = ax.text(row_x_max[i] + pad, y[i], label, ha="left",
-                          va="center", fontsize=9, fontstyle="italic",
-                          color=text_color, zorder=5)
+            txt = ax.text(
+                row_x_max[i] + pad,
+                y[i],
+                label,
+                ha="left",
+                va="center",
+                fontsize=9,
+                fontstyle="italic",
+                color=text_color,
+                zorder=5,
+            )
             fig.canvas.draw()
             txt_bbox = txt.get_window_extent(renderer)
             if txt_bbox.x1 > ax_bbox.x1:
                 txt.remove()
-                ax.text(row_x_min[i] - pad, y[i], label, ha="right",
-                        va="center", fontsize=9, fontstyle="italic",
-                        color=text_color, zorder=5)
+                ax.text(
+                    row_x_min[i] - pad,
+                    y[i],
+                    label,
+                    ha="right",
+                    va="center",
+                    fontsize=9,
+                    fontstyle="italic",
+                    color=text_color,
+                    zorder=5,
+                )
 
     return save_fig(fig, output_prefix, "lollipop")
 
 
 def generate_all_plots(
     rates_df: pd.DataFrame,
-    all_stats: Dict[str, pd.DataFrame],
+    all_stats: dict[str, pd.DataFrame],
     config: ComparisonConfig,
     output_prefix: str,
 ) -> None:

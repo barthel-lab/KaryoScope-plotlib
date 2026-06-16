@@ -23,8 +23,41 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=7.0"]
+dev = ["pytest>=7.0", "pre-commit>=3.5"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
 include = ["karyoplot*"]
+
+# --- ruff (linter + formatter) ---
+# Config mirrors the sibling KaryoScope-analysis repo so the ecosystem lints
+# identically. The ruff version is pinned in .pre-commit-config.yaml (the single
+# source of truth), matching KaryoScope-analysis (v0.15.13).
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = [
+  "E",   # pycodestyle errors
+  "W",   # pycodestyle warnings
+  "F",   # pyflakes
+  "I",   # isort
+  "B",   # flake8-bugbear
+  "UP",  # pyupgrade
+  "SIM", # flake8-simplify
+  "PTH", # flake8-use-pathlib
+  "RUF", # ruff-specific
+]
+ignore = [
+  "E501",  # line length handled by formatter
+  "B008",  # function calls in argument defaults (click uses this idiomatically)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101"]  # allow `assert` in tests
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"

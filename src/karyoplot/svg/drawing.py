@@ -96,10 +96,16 @@ def draw_annotation_track(
             used_colors[annot_type] = {}
         used_colors[annot_type].setdefault(annotation, color)
 
-        d.append(draw.Rectangle(
-            x, y_pos, max(width, 1), track_height,
-            fill=color, stroke="none",
-        ))
+        d.append(
+            draw.Rectangle(
+                x,
+                y_pos,
+                max(width, 1),
+                track_height,
+                fill=color,
+                stroke="none",
+            )
+        )
 
 
 def draw_hexamer_track(
@@ -127,11 +133,17 @@ def draw_hexamer_track(
     plot_x_min = left_margin
     plot_x_max = left_margin + plot_width
 
-    d.append(draw.Line(
-        plot_x_min, y_pos + track_height / 2,
-        plot_x_max, y_pos + track_height / 2,
-        stroke=text_color, stroke_width=0.5, stroke_opacity=0.3,
-    ))
+    d.append(
+        draw.Line(
+            plot_x_min,
+            y_pos + track_height / 2,
+            plot_x_max,
+            y_pos + track_height / 2,
+            stroke=text_color,
+            stroke_width=0.5,
+            stroke_opacity=0.3,
+        )
+    )
 
     for hit in hits:
         pos = hit["position"]
@@ -140,10 +152,16 @@ def draw_hexamer_track(
         x = x_offset + pos * x_scale
         if x < plot_x_min or x > plot_x_max:
             continue
-        d.append(draw.Line(
-            x, y_pos + 2, x, y_pos + track_height - 2,
-            stroke=hit["color"], stroke_width=1.5,
-        ))
+        d.append(
+            draw.Line(
+                x,
+                y_pos + 2,
+                x,
+                y_pos + track_height - 2,
+                stroke=hit["color"],
+                stroke_width=1.5,
+            )
+        )
 
 
 def _tick_spacing(coord_range: int) -> int:
@@ -177,17 +195,29 @@ def draw_axis(
     plot_x_min = left_margin
     plot_x_max = left_margin + plot_width
 
-    d.append(draw.Text(
-        title, font_size=11,
-        x=left_margin + plot_width / 2, y=y_pos - 5,
-        fill=text_color, font_family=font_family,
-        text_anchor="middle", font_weight="bold",
-    ))
+    d.append(
+        draw.Text(
+            title,
+            font_size=11,
+            x=left_margin + plot_width / 2,
+            y=y_pos - 5,
+            fill=text_color,
+            font_family=font_family,
+            text_anchor="middle",
+            font_weight="bold",
+        )
+    )
 
-    d.append(draw.Line(
-        plot_x_min, y_pos, plot_x_max, y_pos,
-        stroke=text_color, stroke_width=1,
-    ))
+    d.append(
+        draw.Line(
+            plot_x_min,
+            y_pos,
+            plot_x_max,
+            y_pos,
+            stroke=text_color,
+            stroke_width=1,
+        )
+    )
 
     spacing = _tick_spacing(view_end - view_start)
     first_tick = ((view_start // spacing) + 1) * spacing
@@ -197,10 +227,17 @@ def draw_axis(
             continue
         d.append(draw.Line(x, y_pos, x, y_pos + 5, stroke=text_color, stroke_width=1))
         label_text = f"{tick_pos / 1000:.0f}kb" if spacing >= 1000 else f"{tick_pos}"
-        d.append(draw.Text(
-            label_text, font_size=7, x=x, y=y_pos + 14,
-            fill=text_color, font_family=font_family, text_anchor="middle",
-        ))
+        d.append(
+            draw.Text(
+                label_text,
+                font_size=7,
+                x=x,
+                y=y_pos + 14,
+                fill=text_color,
+                font_family=font_family,
+                text_anchor="middle",
+            )
+        )
 
 
 def draw_centered_track_labels(
@@ -224,8 +261,14 @@ def draw_centered_track_labels(
     font_size = 9
     for track_name, y_pos in y_positions.items():
         y_centered = y_pos + track_height / 2 + font_size / 3
-        d.append(draw.Text(
-            track_name, font_size=font_size,
-            x=center_x, y=y_centered,
-            fill=text_color, font_family=font_family, text_anchor="middle",
-        ))
+        d.append(
+            draw.Text(
+                track_name,
+                font_size=font_size,
+                x=center_x,
+                y=y_centered,
+                fill=text_color,
+                font_family=font_family,
+                text_anchor="middle",
+            )
+        )

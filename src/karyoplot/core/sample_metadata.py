@@ -11,8 +11,9 @@ projects it into the shape it needs at the call site.
 from __future__ import annotations
 
 import os
+from collections.abc import Iterable
 from dataclasses import dataclass, field
-from typing import Iterable
+from pathlib import Path
 
 
 @dataclass
@@ -79,7 +80,7 @@ def load_sample_metadata(
 
     md = SampleMetadata()
     file_provided = metadata_file is not None
-    file_exists = file_provided and os.path.exists(str(metadata_file))
+    file_exists = file_provided and Path(str(metadata_file)).exists()
 
     meta_df = None
     if file_exists:
@@ -94,9 +95,7 @@ def load_sample_metadata(
 
         if meta_df is not None and "sample" not in meta_df.columns:
             if require_sample_column:
-                raise ValueError(
-                    "Sample metadata file must have 'sample' column"
-                )
+                raise ValueError("Sample metadata file must have 'sample' column")
             meta_df = None  # cluster_plot tolerates this case silently
 
         if meta_df is not None:

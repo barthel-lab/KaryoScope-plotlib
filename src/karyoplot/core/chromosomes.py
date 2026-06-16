@@ -17,9 +17,7 @@ Examples:
 
 from __future__ import annotations
 
-ACROCENTRIC: frozenset[str] = frozenset(
-    {"chr13", "chr14", "chr15", "chr21", "chr22"}
-)
+ACROCENTRIC: frozenset[str] = frozenset({"chr13", "chr14", "chr15", "chr21", "chr22"})
 """Acrocentric chromosomes (carry rDNA arrays in humans)."""
 
 CANONICAL_CHROMS: tuple[str, ...] = tuple(
@@ -28,7 +26,7 @@ CANONICAL_CHROMS: tuple[str, ...] = tuple(
 
 
 def chrom_sort_key(name: str) -> tuple[int, str]:
-    """Sort key that orders chromosomes 1–22, X, Y, M, then alphabetically.
+    """Sort key that orders chromosomes 1-22, X, Y, M, then alphabetically.
 
     Strips a leading ``chr`` prefix. Unknown labels sort after numeric
     chromosomes by their original name to keep ordering stable.
@@ -64,7 +62,7 @@ TELOMERIC_MOTIFS: dict[str, dict[str, str]] = {
 # Reference-specific data lives in dataclasses returned by `reference()`.
 # This keeps the module import-cheap and avoids hardcoded paths.
 
-from dataclasses import dataclass
+from dataclasses import dataclass  # noqa: E402 — kept late to document the cheap-import boundary
 
 
 @dataclass(frozen=True)
@@ -110,9 +108,7 @@ _REFERENCES: dict[str, Reference] = {"CHM13_v2": CHM13_V2}
 def reference(name: str) -> Reference:
     """Look up a registered :class:`Reference` by name."""
     if name not in _REFERENCES:
-        raise ValueError(
-            f"unknown reference {name!r}; available: {sorted(_REFERENCES)}"
-        )
+        raise ValueError(f"unknown reference {name!r}; available: {sorted(_REFERENCES)}")
     return _REFERENCES[name]
 
 

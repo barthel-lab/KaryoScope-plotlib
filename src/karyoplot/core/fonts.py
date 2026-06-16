@@ -114,13 +114,13 @@ def pil_font(size: int, family: str = "Basic Sans", fallback: str = "Arial"):
         path = BARTHEL_FONT_DIR / font_file
         try:
             return ImageFont.truetype(str(path), size)
-        except (OSError, IOError):
+        except OSError:
             pass
 
     if fallback:
         try:
             return ImageFont.truetype(fallback, size)
-        except (OSError, IOError):
+        except OSError:
             pass
 
     return ImageFont.load_default()

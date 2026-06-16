@@ -27,9 +27,9 @@ from math import floor
 # Default scale factors (pixels per bp), matching the inline values
 # used across the existing KaryoScope plotting scripts.
 DEFAULT_SCALES: dict[str, float] = {
-    "full": 4 / 1_000_000,        # 4 px per Mb (whole-genome ideogram)
-    "subtelomere": 1 / 300,        # 1 px per 300 bp (subtelomere zoom)
-    "centromere": 1 / 25_000,      # 1 px per 25 kb (centromere zoom)
+    "full": 4 / 1_000_000,  # 4 px per Mb (whole-genome ideogram)
+    "subtelomere": 1 / 300,  # 1 px per 300 bp (subtelomere zoom)
+    "centromere": 1 / 25_000,  # 1 px per 25 kb (centromere zoom)
 }
 
 
@@ -54,8 +54,7 @@ class PixelScale:
         if self.pixels_per_bp is None:
             if self.mode not in DEFAULT_SCALES:
                 raise ValueError(
-                    f"unknown mode {self.mode!r}; "
-                    "use 'custom' and supply pixels_per_bp"
+                    f"unknown mode {self.mode!r}; use 'custom' and supply pixels_per_bp"
                 )
             object.__setattr__(self, "pixels_per_bp", DEFAULT_SCALES[self.mode])
 
@@ -77,8 +76,21 @@ class PixelScale:
 # ----------------------------------------------------------------------------
 
 DEFAULT_SCALE_OPTIONS: tuple[int, ...] = (
-    100, 200, 500, 1_000, 2_000, 5_000, 10_000, 20_000, 50_000,
-    100_000, 200_000, 500_000, 1_000_000, 2_000_000, 5_000_000,
+    100,
+    200,
+    500,
+    1_000,
+    2_000,
+    5_000,
+    10_000,
+    20_000,
+    50_000,
+    100_000,
+    200_000,
+    500_000,
+    1_000_000,
+    2_000_000,
+    5_000_000,
 )
 
 
@@ -98,7 +110,7 @@ def pick_round_scale_bp(
 
     Used by scale-bar drawing routines that auto-size their bar based on
     the current pixels-per-bp ratio (e.g. ``KaryoScope_cluster_plot``
-    chooses from 1/2/5/10/20 kb to fit a 50–150 px window).
+    chooses from 1/2/5/10/20 kb to fit a 50-150 px window).
 
     Examples:
         >>> pick_round_scale_bp(0.01)          # ratio=0.01 px/bp → 5 kb fits

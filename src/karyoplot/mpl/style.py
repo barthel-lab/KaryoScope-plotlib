@@ -4,7 +4,7 @@ Wraps :mod:`karyoplot.core.fonts` so that the same Basic Sans / Bicyclette
 opt-in path is used by both the SVG and matplotlib backends. When the
 Barthel fonts aren't available the matplotlib font.family falls back to
 ``["sans-serif", "DejaVu Sans"]`` (DejaVu provides Greek glyphs needed
-for β/γ labels).
+for β/gamma labels).
 
 Examples:
     >>> from karyoplot.mpl import style

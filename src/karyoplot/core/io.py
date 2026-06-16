@@ -16,8 +16,8 @@ from __future__ import annotations
 import gzip
 import os
 import subprocess
+from collections.abc import Iterator
 from contextlib import contextmanager
-from typing import Iterator
 
 DEFAULT_BED_COLUMNS: tuple[str, ...] = ("chrom", "start", "end", "name")
 
@@ -60,7 +60,7 @@ def load_bed(
         low_memory=False,
     )
     n_named = min(len(cols), df.shape[1])
-    new_names = list(cols[:n_named]) + [f"col{i+1}" for i in range(n_named, df.shape[1])]
+    new_names = list(cols[:n_named]) + [f"col{i + 1}" for i in range(n_named, df.shape[1])]
     df.columns = new_names
 
     if featureset is not None and "name" in df.columns:
@@ -88,7 +88,7 @@ def iter_bed_records(
             start = int(parts[1])
             end = int(parts[2])
             rest = tuple(parts[3:])
-            yield (chrom, start, end) + rest
+            yield (chrom, start, end, *rest)
 
 
 def fetch_fasta_region(
@@ -133,9 +133,7 @@ class FastaCache:
     def fetch(self, chrom: str, start: int, end: int) -> str:
         key = (chrom, start, end)
         if key not in self._cache:
-            self._cache[key] = fetch_fasta_region(
-                self.fasta_path, chrom, start, end
-            )
+            self._cache[key] = fetch_fasta_region(self.fasta_path, chrom, start, end)
         return self._cache[key]
 
     def clear(self) -> None:

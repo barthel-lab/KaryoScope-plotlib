@@ -13,8 +13,8 @@ from karyoplot.core.sample_metadata import (
     load_sample_metadata,
 )
 
-
 # ----- file fixtures -----
+
 
 def _write_full_metadata(path: Path) -> Path:
     path.write_text(
@@ -41,6 +41,7 @@ def _write_minimal_metadata(path: Path) -> Path:
 
 # ----- core behaviour -----
 
+
 def test_loads_full_metadata(tmp_path: Path):
     f = _write_full_metadata(tmp_path / "meta.tsv")
     md = load_sample_metadata(f, quiet=True)
@@ -59,7 +60,7 @@ def test_loads_full_metadata(tmp_path: Path):
     assert md.group_to_color == {
         "cell_line_alt": "#60A5FA",
         "cell_line_tel": "#F07167",
-        "cell_line_normal": "#222222",   # last sample wins iteration order
+        "cell_line_normal": "#222222",  # last sample wins iteration order
     }
     assert md.sample_to_display_name == {
         "U2OS": "ALT line",
@@ -72,8 +73,8 @@ def test_loads_full_metadata(tmp_path: Path):
 def test_minimal_metadata_no_group_color_no_display(tmp_path: Path):
     f = _write_minimal_metadata(tmp_path / "meta.tsv")
     md = load_sample_metadata(f, quiet=True)
-    assert md.group_to_color == {}            # no group_color column
-    assert md.sample_to_display_name == {}    # no display_name column
+    assert md.group_to_color == {}  # no group_color column
+    assert md.sample_to_display_name == {}  # no display_name column
     assert len(md.sample_to_group) == 4
 
 
@@ -90,6 +91,7 @@ def test_derive_group_colors_from_samples(tmp_path: Path):
 
 
 # ----- missing-samples auto-fill (cluster_analysis behaviour) -----
+
 
 def test_sample_labels_fill_missing_as_own_group(tmp_path: Path):
     f = _write_minimal_metadata(tmp_path / "meta.tsv")
@@ -114,6 +116,7 @@ def test_no_metadata_file_with_sample_labels(tmp_path: Path):
 
 
 # ----- error / fallback handling -----
+
 
 def test_no_metadata_file_no_labels_returns_empty():
     md = load_sample_metadata(None, quiet=True)
@@ -143,13 +146,14 @@ def test_nonexistent_file_returns_empty(tmp_path: Path):
 
 # ----- regression equivalence: cluster_plot legacy behaviour -----
 
+
 def test_cluster_plot_4_tuple_equivalence(tmp_path: Path):
     """Reproduce cluster_plot's load_sample_metadata 4-tuple signature."""
     f = _write_full_metadata(tmp_path / "meta.tsv")
     md = load_sample_metadata(f, require_sample_column=False, quiet=True)
     # cluster_plot legacy 4-tuple:
     sample_to_group = md.sample_to_group
-    sample_colors = md.sample_to_color
+    _sample_colors = md.sample_to_color
     group_colors = md.derive_group_colors_from_samples()
     sample_display_names = md.sample_to_display_name
 

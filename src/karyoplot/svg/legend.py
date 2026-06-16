@@ -25,17 +25,16 @@ import drawsvg as draw
 from ..core.fonts import DEFAULT_FONT_FAMILY
 from ..core.theme import DEFAULT_THEME, Theme
 
-
 # --------------------------------------------------------------------
 # Hexamer legend (called from per-read / hexamer track plots)
 # --------------------------------------------------------------------
 
 HEXAMER_LEGEND_ITEMS: list[tuple[str, str]] = [
-    ("TTAGGG", "#F07167"),          # Coral
-    ("CCCTAA", "#60A5FA"),          # Blue
-    ("TCAGGG/CCCTGA", "#40D392"),   # Green
-    ("TGAGGG/CCCTCA", "#C4A9E8"),   # Lavender
-    ("TTGGGG/CCCCAA", "#FBBF24"),   # Yellow
+    ("TTAGGG", "#F07167"),  # Coral
+    ("CCCTAA", "#60A5FA"),  # Blue
+    ("TCAGGG/CCCTGA", "#40D392"),  # Green
+    ("TGAGGG/CCCTCA", "#C4A9E8"),  # Lavender
+    ("TTGGGG/CCCCAA", "#FBBF24"),  # Yellow
 ]
 
 
@@ -74,46 +73,86 @@ def _draw_hexamer_legend_vertical(d, x_pos, y_pos, text_color, font_family):
     box_size = 10
     current_y = y_pos
 
-    d.append(draw.Text(
-        "Hexamers", font_size=9, x=x_pos, y=current_y,
-        fill=text_color, font_family=font_family, font_weight="bold",
-    ))
+    d.append(
+        draw.Text(
+            "Hexamers",
+            font_size=9,
+            x=x_pos,
+            y=current_y,
+            fill=text_color,
+            font_family=font_family,
+            font_weight="bold",
+        )
+    )
     current_y += row_height
 
     for label, color in HEXAMER_LEGEND_ITEMS:
-        d.append(draw.Rectangle(
-            x_pos + 10, current_y - box_size + 2, box_size, box_size,
-            fill=color, stroke="none",
-        ))
-        d.append(draw.Text(
-            label, font_size=9, x=x_pos + 24, y=current_y,
-            fill=text_color, font_family=font_family,
-        ))
+        d.append(
+            draw.Rectangle(
+                x_pos + 10,
+                current_y - box_size + 2,
+                box_size,
+                box_size,
+                fill=color,
+                stroke="none",
+            )
+        )
+        d.append(
+            draw.Text(
+                label,
+                font_size=9,
+                x=x_pos + 24,
+                y=current_y,
+                fill=text_color,
+                font_family=font_family,
+            )
+        )
         current_y += row_height
     return current_y
 
 
 def _draw_hexamer_legend_horizontal(d, x_pos, y_pos, text_color, font_family):
-    d.append(draw.Text(
-        "Direct Sequence Calls:", font_size=9, x=x_pos, y=y_pos,
-        fill=text_color, font_family=font_family, font_weight="bold",
-    ))
+    d.append(
+        draw.Text(
+            "Direct Sequence Calls:",
+            font_size=9,
+            x=x_pos,
+            y=y_pos,
+            fill=text_color,
+            font_family=font_family,
+            font_weight="bold",
+        )
+    )
     current_x = x_pos
     y_pos += 15
     for label, color in HEXAMER_LEGEND_ITEMS:
-        d.append(draw.Rectangle(
-            current_x, y_pos - 8, 10, 10, fill=color, stroke="none",
-        ))
-        d.append(draw.Text(
-            label, font_size=8, x=current_x + 14, y=y_pos,
-            fill=text_color, font_family=font_family,
-        ))
+        d.append(
+            draw.Rectangle(
+                current_x,
+                y_pos - 8,
+                10,
+                10,
+                fill=color,
+                stroke="none",
+            )
+        )
+        d.append(
+            draw.Text(
+                label,
+                font_size=8,
+                x=current_x + 14,
+                y=y_pos,
+                fill=text_color,
+                font_family=font_family,
+            )
+        )
         current_x += len(label) * 6 + 30
 
 
 # --------------------------------------------------------------------
 # Multi-track grouped legend (drawn alongside a plot)
 # --------------------------------------------------------------------
+
 
 def strip_label_suffixes(name: str) -> str:
     """Clean a feature name into a legend label.
@@ -165,19 +204,33 @@ def draw_grouped_legend(
     """
     if layout == "column":
         return _draw_column_legend(
-            d, x_pos, y_pos, text_color, used_colors, track_labels,
-            tracks, column_width, font_family,
+            d,
+            x_pos,
+            y_pos,
+            text_color,
+            used_colors,
+            track_labels,
+            tracks,
+            column_width,
+            font_family,
         )
     if layout == "vertical":
         return _draw_vertical_legend(
-            d, x_pos, y_pos, text_color, used_colors, track_labels,
-            tracks, font_family,
+            d,
+            x_pos,
+            y_pos,
+            text_color,
+            used_colors,
+            track_labels,
+            tracks,
+            font_family,
         )
     raise ValueError(f"unknown layout {layout!r}; use 'column' or 'vertical'")
 
 
-def _draw_column_legend(d, x_pos, y_pos, text_color, used_colors,
-                         track_labels, tracks, column_width, font_family):
+def _draw_column_legend(
+    d, x_pos, y_pos, text_color, used_colors, track_labels, tracks, column_width, font_family
+):
     row_height = 14
     box_size = 10
     current_x = x_pos
@@ -189,23 +242,40 @@ def _draw_column_legend(d, x_pos, y_pos, text_color, used_colors,
             continue
 
         current_y = y_pos
-        d.append(draw.Text(
-            track_labels.get(annot_type, annot_type), font_size=9,
-            x=current_x, y=current_y,
-            fill=text_color, font_family=font_family, font_weight="bold",
-        ))
+        d.append(
+            draw.Text(
+                track_labels.get(annot_type, annot_type),
+                font_size=9,
+                x=current_x,
+                y=current_y,
+                fill=text_color,
+                font_family=font_family,
+                font_weight="bold",
+            )
+        )
         current_y += row_height
 
         for feature, color in sorted(type_colors.items()):
-            d.append(draw.Rectangle(
-                current_x + 10, current_y - box_size + 2, box_size, box_size,
-                fill=color, stroke="none",
-            ))
-            d.append(draw.Text(
-                _strip_label_suffixes(feature), font_size=9,
-                x=current_x + 24, y=current_y,
-                fill=text_color, font_family=font_family,
-            ))
+            d.append(
+                draw.Rectangle(
+                    current_x + 10,
+                    current_y - box_size + 2,
+                    box_size,
+                    box_size,
+                    fill=color,
+                    stroke="none",
+                )
+            )
+            d.append(
+                draw.Text(
+                    _strip_label_suffixes(feature),
+                    font_size=9,
+                    x=current_x + 24,
+                    y=current_y,
+                    fill=text_color,
+                    font_family=font_family,
+                )
+            )
             current_y += row_height
 
         max_y = max(max_y, current_y)
@@ -214,8 +284,9 @@ def _draw_column_legend(d, x_pos, y_pos, text_color, used_colors,
     return max_y
 
 
-def _draw_vertical_legend(d, x_pos, y_pos, text_color, used_colors,
-                           track_labels, tracks, font_family):
+def _draw_vertical_legend(
+    d, x_pos, y_pos, text_color, used_colors, track_labels, tracks, font_family
+):
     current_y = y_pos
     row_height = 14
     box_size = 10
@@ -225,23 +296,40 @@ def _draw_vertical_legend(d, x_pos, y_pos, text_color, used_colors,
         if not type_colors:
             continue
 
-        d.append(draw.Text(
-            track_labels.get(annot_type, annot_type) + ":", font_size=8,
-            x=x_pos, y=current_y,
-            fill=text_color, font_family=font_family, font_weight="bold",
-        ))
+        d.append(
+            draw.Text(
+                track_labels.get(annot_type, annot_type) + ":",
+                font_size=8,
+                x=x_pos,
+                y=current_y,
+                fill=text_color,
+                font_family=font_family,
+                font_weight="bold",
+            )
+        )
         current_y += row_height
 
         for feature, color in sorted(type_colors.items()):
-            d.append(draw.Rectangle(
-                x_pos + 10, current_y - box_size + 2, box_size, box_size,
-                fill=color, stroke="none",
-            ))
-            d.append(draw.Text(
-                _strip_label_suffixes(feature), font_size=7,
-                x=x_pos + 24, y=current_y,
-                fill=text_color, font_family=font_family,
-            ))
+            d.append(
+                draw.Rectangle(
+                    x_pos + 10,
+                    current_y - box_size + 2,
+                    box_size,
+                    box_size,
+                    fill=color,
+                    stroke="none",
+                )
+            )
+            d.append(
+                draw.Text(
+                    _strip_label_suffixes(feature),
+                    font_size=7,
+                    x=x_pos + 24,
+                    y=current_y,
+                    fill=text_color,
+                    font_family=font_family,
+                )
+            )
             current_y += row_height
         current_y += 4  # extra spacing between sections
 
@@ -251,6 +339,7 @@ def _draw_vertical_legend(d, x_pos, y_pos, text_color, used_colors,
 # --------------------------------------------------------------------
 # Standalone legend drawing (replaces KaryoScope_draw_legend.py main)
 # --------------------------------------------------------------------
+
 
 def _estimate_text_width(text: str, font_size: int) -> float:
     return len(text) * font_size * 0.6
@@ -287,11 +376,74 @@ def merge_by_color(
     for color, features in color_groups.items():
         label = next((overrides[f] for f in features if f in overrides), None)
         if label is None:
-            cleaned = sorted(((_strip_label_suffixes(f), f) for f in features),
-                             key=lambda x: len(x[0]))
+            cleaned = sorted(
+                ((_strip_label_suffixes(f), f) for f in features), key=lambda x: len(x[0])
+            )
             label = cleaned[0][0]
         merged.append((label, color))
     return merged
+
+
+def featureset_legend_items(
+    colors_by_set: dict[str, dict[str, str]],
+    *,
+    feature_sets: list[str] | None = None,
+    set_labels: dict[str, str] | None = None,
+    include: set[str] | None = None,
+    exclude: set[str] | None = None,
+    clean_labels: bool = True,
+) -> list[tuple[str, str, bool]]:
+    """Flatten a ``{feature_set: {feature: color}}`` DB palette into legend rows.
+
+    Produces the ``(label, color, is_header)`` items consumed by
+    :func:`make_legend_drawing`: one bold header row per feature set (the set's
+    display label, empty color, ``is_header=True``) followed by its feature rows.
+    This is the DB-driven replacement for the legacy ``KaryoScope_draw_legend.py``
+    helpers (``load_colors_file`` / ``parse_groups`` / ``group_items``): grouping
+    comes from the ``feature_set`` column of ``colors.tsv`` rather than a manual
+    ``Header:feat1,feat2`` string. Kept DB-agnostic — it takes plain dicts (e.g.
+    from ``karyoscope.core.io.colors.parse_colors``), not engine objects.
+
+    Feature rows preserve the order of ``colors_by_set`` (i.e. the curated
+    ``colors.tsv`` row order). Ordering logic is intentionally **not** duplicated
+    here from the engine's ``karyoscope.core.karyotype._legend_sort_key``; if
+    byte-identical hierarchy-aware ordering is ever needed, sort the per-set dicts
+    upstream (and consider promoting that engine helper to public API).
+
+    Args:
+        colors_by_set: Nested ``{feature_set: {feature: hex}}`` mapping.
+        feature_sets: Feature sets to include, in this order. Sets absent from
+            ``colors_by_set`` are skipped. Defaults to all sets, in dict order.
+        set_labels: Optional ``{feature_set: header_label}`` overrides; a set with
+            no override uses its own name as the header.
+        include: If given, keep only these feature names.
+        exclude: If given, drop these feature names (applied after ``include``).
+        clean_labels: If ``True`` (default), feature labels are passed through
+            :func:`strip_label_suffixes`; if ``False``, names are shown verbatim.
+
+    Returns:
+        Flat list of ``(label, color, is_header)`` rows. Feature sets that end up
+        empty after filtering contribute no header.
+    """
+    order = feature_sets if feature_sets is not None else list(colors_by_set)
+    labels = set_labels or {}
+    items: list[tuple[str, str, bool]] = []
+    for fs in order:
+        fs_colors = colors_by_set.get(fs)
+        if not fs_colors:
+            continue
+        rows: list[tuple[str, str, bool]] = []
+        for feature, color in fs_colors.items():
+            if include is not None and feature not in include:
+                continue
+            if exclude is not None and feature in exclude:
+                continue
+            label = strip_label_suffixes(feature) if clean_labels else feature
+            rows.append((label, color, False))
+        if rows:
+            items.append((labels.get(fs, fs), "", True))
+            items.extend(rows)
+    return items
 
 
 def make_legend_drawing(
@@ -377,12 +529,16 @@ def make_legend_drawing(
         labels = [label for label, _, _ in col]
         if ci in col_headers:
             labels.append(col_headers[ci])
-        col_widths.append(swatch_gap + max(_estimate_text_width(l, font_size) for l in labels))
+        col_widths.append(
+            swatch_gap + max(_estimate_text_width(label, font_size) for label in labels)
+        )
 
     if col_spacing is None:
         col_spacing = 20
 
-    total_width = round(padding * 2 + sum(col_widths) + col_spacing * max(0, len(col_widths) - 1), 1)
+    total_width = round(
+        padding * 2 + sum(col_widths) + col_spacing * max(0, len(col_widths) - 1), 1
+    )
     max_rows_in_col = max((len(c) for c in columns), default=0)
     header_offset = row_spacing if has_headers else 0
     total_height = round(padding * 2 + max_rows_in_col * row_spacing + header_offset, 1)
@@ -393,22 +549,40 @@ def make_legend_drawing(
     x_offset = padding
     for ci, col in enumerate(columns):
         if ci in col_headers:
-            d.append(draw.Text(
-                col_headers[ci], font_size,
-                x_offset, padding + swatch_size - 1,
-                fill=text_color, font_family=font_family, font_weight="bold",
-            ))
+            d.append(
+                draw.Text(
+                    col_headers[ci],
+                    font_size,
+                    x_offset,
+                    padding + swatch_size - 1,
+                    fill=text_color,
+                    font_family=font_family,
+                    font_weight="bold",
+                )
+            )
         y_offset = padding + header_offset
         for label, color, _ in col:
-            d.append(draw.Rectangle(
-                x_offset, y_offset, swatch_size, swatch_size,
-                fill=color, stroke=stroke_color, stroke_width=0.5,
-            ))
-            d.append(draw.Text(
-                label, font_size,
-                x_offset + swatch_gap, y_offset + swatch_size - 1,
-                fill=text_color, font_family=font_family,
-            ))
+            d.append(
+                draw.Rectangle(
+                    x_offset,
+                    y_offset,
+                    swatch_size,
+                    swatch_size,
+                    fill=color,
+                    stroke=stroke_color,
+                    stroke_width=0.5,
+                )
+            )
+            d.append(
+                draw.Text(
+                    label,
+                    font_size,
+                    x_offset + swatch_gap,
+                    y_offset + swatch_size - 1,
+                    fill=text_color,
+                    font_family=font_family,
+                )
+            )
             y_offset += row_spacing
         x_offset += col_widths[ci] + col_spacing
 

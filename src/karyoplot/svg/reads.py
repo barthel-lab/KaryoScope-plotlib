@@ -33,7 +33,7 @@ def smooth_features_to_pixels(colored_features, bar_length, ratio, oversample: i
     the color with the most bp coverage wins. Contiguous same-color pixels
     are run-length encoded into single rectangles.
 
-    When ``oversample > 1``, rasterization happens at oversample× resolution
+    When ``oversample > 1``, rasterization happens at oversamplex resolution
     internally, then coordinates are divided by oversample before output.
     This lets features smaller than 1/ratio bp survive the majority vote
     and appear as fractional-pixel SVG rects.
@@ -96,24 +96,28 @@ def smooth_features_to_pixels(colored_features, bar_length, ratio, oversample: i
         # Run-length encoding
         if px_color != current_color:
             if current_color is not None:
-                result.append({
-                    'scaled_start': run_start / oversample,
-                    'scaled_stop': px / oversample,
-                    'color': current_color,
-                    'fill_opacity': current_opacity
-                })
+                result.append(
+                    {
+                        "scaled_start": run_start / oversample,
+                        "scaled_stop": px / oversample,
+                        "color": current_color,
+                        "fill_opacity": current_opacity,
+                    }
+                )
             current_color = px_color
             current_opacity = px_opacity
             run_start = px
 
     # Flush last run
     if current_color is not None:
-        result.append({
-            'scaled_start': run_start / oversample,
-            'scaled_stop': bar_length,
-            'color': current_color,
-            'fill_opacity': current_opacity
-        })
+        result.append(
+            {
+                "scaled_start": run_start / oversample,
+                "scaled_stop": bar_length,
+                "color": current_color,
+                "fill_opacity": current_opacity,
+            }
+        )
 
     return result
 
@@ -171,8 +175,7 @@ def features_to_pixels_direct(colored_features, bar_length, ratio, min_width: fl
         if shrinkable > 0:
             factor = max(0, 1 - excess / shrinkable)
             segments = [
-                (em + (w - em) * factor if w > em else w,
-                 nw, c, o, em)
+                (em + (w - em) * factor if w > em else w, nw, c, o, em)
                 for w, nw, c, o, em in segments
             ]
 
@@ -196,27 +199,37 @@ def features_to_pixels_direct(colored_features, bar_length, ratio, min_width: fl
         if color == run_color and opacity == run_opacity and abs(px_start - run_stop) < 0.01:
             run_stop = px_stop
         else:
-            result.append({
-                'scaled_start': run_start,
-                'scaled_stop': run_stop,
-                'color': run_color,
-                'fill_opacity': run_opacity
-            })
+            result.append(
+                {
+                    "scaled_start": run_start,
+                    "scaled_stop": run_stop,
+                    "color": run_color,
+                    "fill_opacity": run_opacity,
+                }
+            )
             run_start, run_stop, run_color, run_opacity = px_start, px_stop, color, opacity
 
     # Flush last run
-    result.append({
-        'scaled_start': run_start,
-        'scaled_stop': run_stop,
-        'color': run_color,
-        'fill_opacity': run_opacity
-    })
+    result.append(
+        {
+            "scaled_start": run_start,
+            "scaled_stop": run_stop,
+            "color": run_color,
+            "fill_opacity": run_opacity,
+        }
+    )
 
     return result
 
 
-def rasterize_features(colored_features, bar_length, ratio, feature_mode: str = "transition",
-                       oversample: int = 1, min_feature_width: float = 0.5):
+def rasterize_features(
+    colored_features,
+    bar_length,
+    ratio,
+    feature_mode: str = "transition",
+    oversample: int = 1,
+    min_feature_width: float = 0.5,
+):
     """Dispatch feature rasterization based on ``feature_mode``.
 
     Args:
@@ -237,7 +250,7 @@ def rasterize_features(colored_features, bar_length, ratio, feature_mode: str = 
     if feature_mode == "raw":
         return None
     if feature_mode == "transition":
-        return features_to_pixels_direct(colored_features, bar_length, ratio,
-                                         min_width=min_feature_width)
-    return smooth_features_to_pixels(colored_features, bar_length, ratio,
-                                     oversample=oversample)
+        return features_to_pixels_direct(
+            colored_features, bar_length, ratio, min_width=min_feature_width
+        )
+    return smooth_features_to_pixels(colored_features, bar_length, ratio, oversample=oversample)

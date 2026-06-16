@@ -44,9 +44,7 @@ class Theme:
     line: str
     muted_line: str
     font_family: str = DEFAULT_FONT_FAMILY
-    font_sizes: dict[str, int] = field(
-        default_factory=lambda: {"label": 7, "axis": 8, "title": 10}
-    )
+    font_sizes: dict[str, int] = field(default_factory=lambda: {"label": 7, "axis": 8, "title": 10})
 
 
 DARK = Theme(
@@ -77,9 +75,7 @@ def get(name: str | None = None) -> Theme:
         return DEFAULT_THEME
     key = name.lower()
     if key not in _THEMES:
-        raise ValueError(
-            f"unknown theme {name!r}; available: {sorted(set(_THEMES))}"
-        )
+        raise ValueError(f"unknown theme {name!r}; available: {sorted(set(_THEMES))}")
     return _THEMES[key]
 
 

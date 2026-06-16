@@ -15,7 +15,6 @@ from karyoplot.core.colors import (
     load_palette_file,
 )
 
-
 # Sample colors file content used by both single-file and multi-file tests.
 SAMPLE = """\
 feature\tcolor
@@ -35,6 +34,7 @@ PJ_specific\t#FFFF00
 
 
 # ── single-file: load_palette_file ──────────────────────────────────────────
+
 
 def test_load_palette_file_basic_hex(tmp_path: Path):
     f = tmp_path / "x.colors.txt"
@@ -112,7 +112,7 @@ def test_load_palette_file_with_sections(tmp_path: Path):
 def test_load_palette_file_no_sections_wraps_in_none_header(tmp_path: Path):
     f = tmp_path / "x.colors.txt"
     f.write_text(SAMPLE)  # no '# Header' lines
-    palette, sections = load_palette_file(f, parse_sections=True)
+    _palette, sections = load_palette_file(f, parse_sections=True)
     # When there are no section markers, the entire palette is wrapped in
     # one (None, [...]) section
     assert len(sections) == 1
@@ -134,13 +134,12 @@ def test_load_palette_file_invalid_value_format_raises(tmp_path: Path):
 
 # ── multi-file: load_featureset_palettes ────────────────────────────────────
 
+
 def _setup_dir(tmp_path: Path, database: str = "KS_test"):
     (tmp_path / f"{database}.repeat.colors.txt").write_text(
         "feature\tcolor\nLINE_specific\t#AAA\nSINE_specific\t#BBB\n"
     )
-    (tmp_path / f"{database}.region.colors.txt").write_text(
-        "feature\tcolor\ncentromeric\t#CCC\n"
-    )
+    (tmp_path / f"{database}.region.colors.txt").write_text("feature\tcolor\ncentromeric\t#CCC\n")
     return database
 
 
@@ -172,18 +171,24 @@ def test_load_featureset_palettes_with_background_seeds_novel_unknown(tmp_path: 
 def test_load_featureset_palettes_missing_warn(tmp_path: Path, capsys):
     db = _setup_dir(tmp_path)
     out = load_featureset_palettes(
-        tmp_path, db, ["repeat", "nonexistent"], on_missing="warn",
+        tmp_path,
+        db,
+        ["repeat", "nonexistent"],
+        on_missing="warn",
     )
     captured = capsys.readouterr().out
     assert "Warning" in captured
-    assert out["repeat"]                    # loaded
-    assert out["nonexistent"] == {}         # empty without seed
+    assert out["repeat"]  # loaded
+    assert out["nonexistent"] == {}  # empty without seed
 
 
 def test_load_featureset_palettes_missing_silent(tmp_path: Path, capsys):
     db = _setup_dir(tmp_path)
     out = load_featureset_palettes(
-        tmp_path, db, ["nonexistent"], on_missing="silent",
+        tmp_path,
+        db,
+        ["nonexistent"],
+        on_missing="silent",
     )
     captured = capsys.readouterr().out
     assert "Warning" not in captured
@@ -194,13 +199,19 @@ def test_load_featureset_palettes_missing_error_exits(tmp_path: Path):
     db = _setup_dir(tmp_path)
     with pytest.raises(SystemExit):
         load_featureset_palettes(
-            tmp_path, db, ["nonexistent"], on_missing="error",
+            tmp_path,
+            db,
+            ["nonexistent"],
+            on_missing="error",
         )
 
 
 def test_load_featureset_palettes_track_order(tmp_path: Path):
     db = _setup_dir(tmp_path)
-    out, orders = load_featureset_palettes(
-        tmp_path, db, ["repeat"], track_order=True,
+    _out, orders = load_featureset_palettes(
+        tmp_path,
+        db,
+        ["repeat"],
+        track_order=True,
     )
     assert orders["repeat"] == ["LINE_specific", "SINE_specific"]

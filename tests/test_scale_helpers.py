@@ -5,11 +5,11 @@ import pytest
 from karyoplot.core.coords import DEFAULT_SCALE_OPTIONS, pick_round_scale_bp
 from karyoplot.core.text import format_genomic_distance
 
-
 # ── pick_round_scale_bp ─────────────────────────────────────────────────────
 
+
 def test_pick_5kb_at_default_ratio():
-    # ratio=0.01 px/bp: 5000 bp → 50 px (lower bound of 50–150 window)
+    # ratio=0.01 px/bp: 5000 bp → 50 px (lower bound of 50-150 window)
     assert pick_round_scale_bp(0.01) == 5000
 
 
@@ -25,15 +25,25 @@ def test_pick_jumps_to_smaller_when_zoomed_in():
 
 def test_pick_falls_back_when_no_option_fits():
     # ratio=10 px/bp + tight window — nothing fits
-    assert pick_round_scale_bp(
-        10, target_min_px=50, target_max_px=150, fallback_bp=999,
-    ) == 999
+    assert (
+        pick_round_scale_bp(
+            10,
+            target_min_px=50,
+            target_max_px=150,
+            fallback_bp=999,
+        )
+        == 999
+    )
 
 
 def test_pick_respects_custom_options():
     options = (1, 5, 25)
-    assert pick_round_scale_bp(20, target_min_px=50, target_max_px=150,
-                               options=options, fallback_bp=-1) == 5
+    assert (
+        pick_round_scale_bp(
+            20, target_min_px=50, target_max_px=150, options=options, fallback_bp=-1
+        )
+        == 5
+    )
 
 
 def test_pick_first_match_wins():
@@ -48,6 +58,7 @@ def test_default_options_are_round_numbers():
 
 
 # ── format_genomic_distance ─────────────────────────────────────────────────
+
 
 def test_kb_short_style_default():
     assert format_genomic_distance(5000) == "5 kb"

@@ -56,8 +56,7 @@ def svg_to_png(
     out = str(png_path) if png_path else svg.rsplit(".svg", 1)[0] + ".png"
 
     if dpi is not None:
-        cmd = ["rsvg-convert", "-d", str(dpi), "-p", str(dpi),
-               "-f", "png", "-o", out, svg]
+        cmd = ["rsvg-convert", "-d", str(dpi), "-p", str(dpi), "-f", "png", "-o", out, svg]
     else:
         z = scale if scale is not None else 4
         cmd = ["rsvg-convert", "-z", str(z), "-f", "png", "-o", out, svg]
@@ -68,7 +67,7 @@ def svg_to_png(
         if raise_on_error:
             raise RsvgConvertMissingError(
                 "rsvg-convert not found on PATH; install librsvg"
-            )
+            ) from None
         if not quiet:
             print("  Warning: rsvg-convert not found, skipping PNG export")
         return None

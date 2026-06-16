@@ -14,7 +14,6 @@ Tests performed per feature group in :func:`compare_two_conditions`:
 from __future__ import annotations
 
 import itertools
-from typing import Dict, List, Optional
 
 import numpy as np
 import pandas as pd
@@ -25,7 +24,7 @@ from .types import ComparisonConfig, Condition
 
 
 def compare_two_conditions(
-    annotations: Dict[str, pd.DataFrame],
+    annotations: dict[str, pd.DataFrame],
     cond_a: Condition,
     cond_b: Condition,
     config: ComparisonConfig,
@@ -76,7 +75,7 @@ def compare_two_conditions(
             mw_p = 1.0
 
         # Per-sample rates
-        a_sample_rates: List[float] = []
+        a_sample_rates: list[float] = []
         for a_sample in cond_a.samples:
             if a_sample not in annotations:
                 continue
@@ -89,17 +88,17 @@ def compare_two_conditions(
             a_sample_rates.append(ac / at * 100 if at > 0 else 0.0)
 
         # Per-sample Fisher + combined
-        per_sample_pvals: List[float] = []
-        per_sample_directions: List[str] = []
-        b_sample_rates: List[float] = []
+        per_sample_pvals: list[float] = []
+        per_sample_directions: list[str] = []
+        b_sample_rates: list[float] = []
 
         for b_sample in cond_b.samples:
             if b_sample not in annotations:
                 continue
             b_df = annotations[b_sample]
-            b_vals = compute_feature_values(
-                b_df, {fg_name: fg}, config.featureset, config.metric
-            )[fg_name]
+            b_vals = compute_feature_values(b_df, {fg_name: fg}, config.featureset, config.metric)[
+                fg_name
+            ]
             bc = int((b_vals > config.threshold).sum())
             bt = len(b_df)
             br = bc / bt * 100 if bt > 0 else 0.0
@@ -123,9 +122,7 @@ def compare_two_conditions(
 
         # Sample-level Mann-Whitney
         try:
-            _, sample_mw_p = mannwhitneyu(
-                a_sample_rates, b_sample_rates, alternative="two-sided"
-            )
+            _, sample_mw_p = mannwhitneyu(a_sample_rates, b_sample_rates, alternative="two-sided")
         except Exception:
             sample_mw_p = 1.0
 
@@ -149,53 +146,49 @@ def compare_two_conditions(
             direction = "none"
 
         # Rank of condition A among all samples
-        all_rates = b_sample_rates + [a_rate]
+        all_rates = [*b_sample_rates, a_rate]
         all_rates_sorted = sorted(all_rates)
         a_rank = all_rates_sorted.index(a_rate) + 1
         n_total_samples = len(all_rates)
 
         # Consistency
         non_eq = [d for d in per_sample_directions if d != "="]
-        consistent = (
-            "consistent"
-            if non_eq and all(d == non_eq[0] for d in non_eq)
-            else "mixed"
-        )
+        consistent = "consistent" if non_eq and all(d == non_eq[0] for d in non_eq) else "mixed"
 
-        stat_rows.append({
-            "feature": fg_name,
-            "feature_label": fg.label,
-            f"{cond_a.name}_count": a_count,
-            f"{cond_a.name}_total": a_total,
-            f"{cond_a.name}_rate_pct": round(a_rate, 4),
-            f"{cond_b.name}_count": b_count,
-            f"{cond_b.name}_total": b_total,
-            f"{cond_b.name}_rate_pct": round(b_rate, 4),
-            f"{cond_b.name}_mean_rate_pct": round(b_mean_rate, 4),
-            "log2FC": (
-                round(log2fc, 4)
-                if not np.isinf(log2fc)
-                else ("-inf" if log2fc < 0 else "inf")
-            ),
-            "direction": direction,
-            f"{cond_a.name}_rank_of_{n_total_samples}": a_rank,
-            "consistency": consistent,
-            "pooled_fisher_p": fisher_p,
-            "pooled_fisher_OR": (
-                round(fisher_OR, 4)
-                if not np.isinf(fisher_OR) and not np.isnan(fisher_OR)
-                else str(fisher_OR)
-            ),
-            "mann_whitney_p": mw_p,
-            "sample_mann_whitney_p": sample_mw_p,
-            "n_individual_sig": n_sig,
-            "combined_fisher_p": combined_p,
-        })
+        stat_rows.append(
+            {
+                "feature": fg_name,
+                "feature_label": fg.label,
+                f"{cond_a.name}_count": a_count,
+                f"{cond_a.name}_total": a_total,
+                f"{cond_a.name}_rate_pct": round(a_rate, 4),
+                f"{cond_b.name}_count": b_count,
+                f"{cond_b.name}_total": b_total,
+                f"{cond_b.name}_rate_pct": round(b_rate, 4),
+                f"{cond_b.name}_mean_rate_pct": round(b_mean_rate, 4),
+                "log2FC": (
+                    round(log2fc, 4) if not np.isinf(log2fc) else ("-inf" if log2fc < 0 else "inf")
+                ),
+                "direction": direction,
+                f"{cond_a.name}_rank_of_{n_total_samples}": a_rank,
+                "consistency": consistent,
+                "pooled_fisher_p": fisher_p,
+                "pooled_fisher_OR": (
+                    round(fisher_OR, 4)
+                    if not np.isinf(fisher_OR) and not np.isnan(fisher_OR)
+                    else str(fisher_OR)
+                ),
+                "mann_whitney_p": mw_p,
+                "sample_mann_whitney_p": sample_mw_p,
+                "n_individual_sig": n_sig,
+                "combined_fisher_p": combined_p,
+            }
+        )
 
     return pd.DataFrame(stat_rows)
 
 
-def apply_fdr(stats_df: pd.DataFrame, p_columns: Optional[List[str]] = None) -> pd.DataFrame:
+def apply_fdr(stats_df: pd.DataFrame, p_columns: list[str] | None = None) -> pd.DataFrame:
     """Apply Benjamini-Hochberg FDR correction to p-value columns.
 
     Args:
@@ -238,15 +231,15 @@ def apply_fdr(stats_df: pd.DataFrame, p_columns: Optional[List[str]] = None) -> 
 
 
 def run_all_comparisons(
-    annotations: Dict[str, pd.DataFrame],
+    annotations: dict[str, pd.DataFrame],
     config: ComparisonConfig,
-) -> Dict[str, pd.DataFrame]:
+) -> dict[str, pd.DataFrame]:
     """Run comparisons based on ``config.comparison_mode``.
 
     Returns:
         Mapping ``{comparison_label: stats_df}``.
     """
-    results: Dict[str, pd.DataFrame] = {}
+    results: dict[str, pd.DataFrame] = {}
     conds = list(config.conditions.values())
 
     if config.comparison_mode == "reference":
@@ -266,10 +259,7 @@ def run_all_comparisons(
 
     elif config.comparison_mode == "pairwise":
         if config.comparisons:
-            pairs = [
-                (config.conditions[a], config.conditions[b])
-                for a, b in config.comparisons
-            ]
+            pairs = [(config.conditions[a], config.conditions[b]) for a, b in config.comparisons]
         else:
             pairs = list(itertools.combinations(conds, 2))
         for cond_a, cond_b in pairs:

@@ -31,7 +31,6 @@ A typical workflow:
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Tuple
 
 
 @dataclass
@@ -41,10 +40,10 @@ class FeatureGroup:
     name: str
     label: str
     color: str
-    features: List[str]
+    features: list[str]
     aggregation: str = "single"  # "single" or "sum"
 
-    def get_columns(self, featureset: str, metric: str) -> List[str]:
+    def get_columns(self, featureset: str, metric: str) -> list[str]:
         """Build full column names from featureset and metric."""
         return [f"{featureset}_{metric}__{f}" for f in self.features]
 
@@ -56,7 +55,7 @@ class Condition:
     name: str
     label: str
     color: str
-    samples: List[str]
+    samples: list[str]
 
 
 @dataclass
@@ -71,11 +70,11 @@ class CovariateValue:
 class CovariateColumn:
     """Definition of a single covariate column."""
 
-    source_column: str          # column name in the TSV file
-    label: str                  # display label
-    type: str                   # "categorical" or "continuous"
-    values: Optional[Dict[str, CovariateValue]] = None  # for categorical
-    cmap: str = "YlOrRd"        # for continuous
+    source_column: str  # column name in the TSV file
+    label: str  # display label
+    type: str  # "categorical" or "continuous"
+    values: dict[str, CovariateValue] | None = None  # for categorical
+    cmap: str = "YlOrRd"  # for continuous
 
 
 @dataclass
@@ -84,7 +83,7 @@ class CovariateConfig:
 
     file: str
     id_column: str
-    columns: Dict[str, CovariateColumn]  # keyed by source column name
+    columns: dict[str, CovariateColumn]  # keyed by source column name
 
 
 @dataclass
@@ -98,10 +97,10 @@ class ComparisonConfig:
     featureset: str
     metric: str
     threshold: float
-    comparison_mode: str               # "reference" or "pairwise"
-    reference_condition: Optional[str]
-    conditions: Dict[str, Condition]
-    feature_groups: Dict[str, FeatureGroup]
+    comparison_mode: str  # "reference" or "pairwise"
+    reference_condition: str | None
+    conditions: dict[str, Condition]
+    feature_groups: dict[str, FeatureGroup]
     dark_mode: bool = False
-    covariates: Optional[CovariateConfig] = None
-    comparisons: Optional[List[Tuple[str, str]]] = None
+    covariates: CovariateConfig | None = None
+    comparisons: list[tuple[str, str]] | None = None

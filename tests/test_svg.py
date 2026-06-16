@@ -5,8 +5,8 @@ from pathlib import Path
 import drawsvg as draw
 import pytest
 
-
 # ----- drawing -----
+
 
 def test_color_lookup_flat_dict():
     from karyoplot.svg.drawing import _color_lookup
@@ -24,8 +24,8 @@ def test_color_lookup_nested_dict():
 
 
 def test_color_lookup_default_on_miss():
-    from karyoplot.svg.drawing import _color_lookup
     from karyoplot.core.colors import DEFAULT_COLOR
+    from karyoplot.svg.drawing import _color_lookup
 
     assert _color_lookup("missing", "type", {}) == DEFAULT_COLOR
 
@@ -38,12 +38,21 @@ def test_draw_annotation_track_appends_rectangles_and_records_colors():
     regions = [(10, 50, "feat_a"), (60, 90, "feat_b")]
     palette = {"chromosome": {"feat_a": "#FF0000", "feat_b": "#00FF00"}}
     draw_annotation_track(
-        d, regions, y_pos=10, track_height=8,
-        x_scale=1.0, x_offset=0,
-        annot_type="chromosome", label="chr",
-        text_color="#FFFFFF", left_margin=0,
-        color_maps=palette, used_colors=used,
-        plot_width=100, view_start=0, view_end=100,
+        d,
+        regions,
+        y_pos=10,
+        track_height=8,
+        x_scale=1.0,
+        x_offset=0,
+        annot_type="chromosome",
+        label="chr",
+        text_color="#FFFFFF",
+        left_margin=0,
+        color_maps=palette,
+        used_colors=used,
+        plot_width=100,
+        view_start=0,
+        view_end=100,
     )
     assert used["chromosome"]["feat_a"] == "#FF0000"
     assert used["chromosome"]["feat_b"] == "#00FF00"
@@ -56,9 +65,15 @@ def test_draw_axis_runs_clean():
 
     d = draw.Drawing(200, 50)
     draw_axis(
-        d, view_start=0, view_end=10_000,
-        y_pos=20, x_scale=0.02, x_offset=10,
-        text_color="#FFFFFF", left_margin=10, plot_width=180,
+        d,
+        view_start=0,
+        view_end=10_000,
+        y_pos=20,
+        x_scale=0.02,
+        x_offset=10,
+        text_color="#FFFFFF",
+        left_margin=10,
+        plot_width=180,
         title="test axis",
     )
     # Title + axis line + at least one tick group
@@ -66,6 +81,7 @@ def test_draw_axis_runs_clean():
 
 
 # ----- legend -----
+
 
 def test_draw_hexamer_legend_vertical_returns_y():
     from karyoplot.svg.legend import draw_hexamer_legend
@@ -94,9 +110,14 @@ def test_draw_grouped_legend_column_layout():
     }
     labels = {"chromosome": "Chromosome", "repeat": "Repeats"}
     final_y = draw_grouped_legend(
-        d, x_pos=10, y_pos=10, text_color="#FFFFFF",
-        used_colors=used, track_labels=labels,
-        tracks=["chromosome", "repeat"], layout="column",
+        d,
+        x_pos=10,
+        y_pos=10,
+        text_color="#FFFFFF",
+        used_colors=used,
+        track_labels=labels,
+        tracks=["chromosome", "repeat"],
+        layout="column",
     )
     assert final_y > 10
     assert len(d.elements) > 0
@@ -108,9 +129,47 @@ def test_draw_grouped_legend_unknown_layout_raises():
     d = draw.Drawing(100, 100)
     with pytest.raises(ValueError):
         draw_grouped_legend(
-            d, x_pos=0, y_pos=0, text_color="#FFFFFF",
-            used_colors={}, track_labels={}, tracks=[], layout="bogus",
+            d,
+            x_pos=0,
+            y_pos=0,
+            text_color="#FFFFFF",
+            used_colors={},
+            track_labels={},
+            tracks=[],
+            layout="bogus",
         )
+
+
+def test_featureset_legend_items_groups_with_headers():
+    from karyoplot.svg.legend import featureset_legend_items
+
+    by_set = {
+        "chromosome": {"chr1": "#FF0000", "chr2": "#00FF00"},
+        "repeat": {"LINE": "#0000FF"},
+    }
+    items = featureset_legend_items(by_set)
+    # One header per set + one row per feature, in input order.
+    assert items[0] == ("chromosome", "", True)
+    assert ("chr1", "#FF0000", False) in items
+    assert items[3] == ("repeat", "", True)
+    assert items[-1] == ("LINE", "#0000FF", False)
+
+
+def test_featureset_legend_items_filters_and_orders():
+    from karyoplot.svg.legend import featureset_legend_items
+
+    by_set = {
+        "chromosome": {"chr1": "#FF0000", "chr2": "#00FF00"},
+        "repeat": {"LINE": "#0000FF"},
+    }
+    # Restrict sets/features, custom header label; an emptied set yields no header.
+    items = featureset_legend_items(
+        by_set,
+        feature_sets=["repeat", "chromosome"],
+        set_labels={"repeat": "Repeats"},
+        exclude={"chr1", "chr2"},
+    )
+    assert items == [("Repeats", "", True), ("LINE", "#0000FF", False)]
 
 
 def test_merge_by_color_keeps_shortest_label():
@@ -144,8 +203,8 @@ def test_make_legend_drawing_dark_default_background(tmp_path: Path):
 
 
 def test_make_legend_drawing_with_light_theme(tmp_path: Path):
-    from karyoplot.svg.legend import make_legend_drawing
     from karyoplot.core.theme import LIGHT
+    from karyoplot.svg.legend import make_legend_drawing
 
     items = [("a", "#FF0000", False)]
     d = make_legend_drawing(items, theme=LIGHT)
@@ -183,6 +242,7 @@ def test_make_legend_drawing_empty_items():
 
 
 # ----- export -----
+
 
 def test_svg_to_png_missing_tool_returns_none(monkeypatch, tmp_path: Path):
     from karyoplot.svg import export
@@ -229,6 +289,7 @@ def test_svg_to_png_dpi_emits_d_and_p_flags(monkeypatch, tmp_path: Path):
     svg.write_text('<svg xmlns="http://www.w3.org/2000/svg"></svg>')
 
     captured = {}
+
     def fake_run(cmd, **kwargs):
         captured["cmd"] = cmd
 
@@ -246,6 +307,7 @@ def test_svg_to_png_scale_emits_z_flag(monkeypatch, tmp_path: Path):
     svg.write_text('<svg xmlns="http://www.w3.org/2000/svg"></svg>')
 
     captured = {}
+
     def fake_run(cmd, **kwargs):
         captured["cmd"] = cmd
 
