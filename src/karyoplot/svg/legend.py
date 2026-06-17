@@ -171,6 +171,7 @@ def draw_grouped_legend(
     layout: str = "column",
     column_width: float = 120,
     font_family: str = DEFAULT_FONT_FAMILY,
+    sort_key=None,
 ) -> float:
     """Draw a legend organised by track type with section headers.
 
@@ -186,6 +187,9 @@ def draw_grouped_legend(
             ``"vertical"`` (single column, sections stacked).
         column_width: Column width when ``layout="column"``.
         font_family: Font family for labels.
+        sort_key: Optional ``feature -> sortable`` callable for ordering features within each
+            track. Defaults to alphabetical (``None``). Pass a DB-aware key for KaryoScope-style
+            ordering (the renderer stays DB-agnostic — it just receives the callable).
 
     Returns:
         Final Y position after the legend.
@@ -201,6 +205,7 @@ def draw_grouped_legend(
             tracks,
             column_width,
             font_family,
+            sort_key,
         )
     if layout == "vertical":
         return _draw_vertical_legend(
@@ -212,12 +217,29 @@ def draw_grouped_legend(
             track_labels,
             tracks,
             font_family,
+            sort_key,
         )
     raise ValueError(f"unknown layout {layout!r}; use 'column' or 'vertical'")
 
 
+def _sorted_items(type_colors: dict, sort_key):
+    """Feature/color items ordered by ``sort_key`` (on the feature name), else alphabetically."""
+    if sort_key is None:
+        return sorted(type_colors.items())
+    return sorted(type_colors.items(), key=lambda kv: sort_key(kv[0]))
+
+
 def _draw_column_legend(
-    d, x_pos, y_pos, text_color, used_colors, track_labels, tracks, column_width, font_family
+    d,
+    x_pos,
+    y_pos,
+    text_color,
+    used_colors,
+    track_labels,
+    tracks,
+    column_width,
+    font_family,
+    sort_key=None,
 ):
     row_height = 14
     box_size = 10
@@ -243,7 +265,7 @@ def _draw_column_legend(
         )
         current_y += row_height
 
-        for feature, color in sorted(type_colors.items()):
+        for feature, color in _sorted_items(type_colors, sort_key):
             d.append(
                 draw.Rectangle(
                     current_x + 10,
@@ -273,7 +295,7 @@ def _draw_column_legend(
 
 
 def _draw_vertical_legend(
-    d, x_pos, y_pos, text_color, used_colors, track_labels, tracks, font_family
+    d, x_pos, y_pos, text_color, used_colors, track_labels, tracks, font_family, sort_key=None
 ):
     current_y = y_pos
     row_height = 14
@@ -297,7 +319,7 @@ def _draw_vertical_legend(
         )
         current_y += row_height
 
-        for feature, color in sorted(type_colors.items()):
+        for feature, color in _sorted_items(type_colors, sort_key):
             d.append(
                 draw.Rectangle(
                     x_pos + 10,
@@ -378,6 +400,7 @@ def featureset_legend_items(
     include: set[str] | None = None,
     exclude: set[str] | None = None,
     clean_labels: bool = True,
+    sort_key=None,
 ) -> list[tuple[str, str, bool]]:
     """Flatten a ``{feature_set: {feature: color}}`` DB palette into legend rows.
 
@@ -406,6 +429,8 @@ def featureset_legend_items(
         exclude: If given, drop these feature names (applied after ``include``).
         clean_labels: If ``True`` (default), feature labels are passed through
             :func:`clean_label` (underscores -> spaces); if ``False``, shown verbatim.
+        sort_key: Optional ``feature -> sortable`` callable to order features within each set;
+            defaults to the ``colors_by_set`` order. (DB-agnostic — just a callable.)
 
     Returns:
         Flat list of ``(label, color, is_header)`` rows. Feature sets that end up
@@ -418,8 +443,11 @@ def featureset_legend_items(
         fs_colors = colors_by_set.get(fs)
         if not fs_colors:
             continue
+        feats = list(fs_colors.items())
+        if sort_key is not None:
+            feats.sort(key=lambda fc: sort_key(fc[0]))
         rows: list[tuple[str, str, bool]] = []
-        for feature, color in fs_colors.items():
+        for feature, color in feats:
             if include is not None and feature not in include:
                 continue
             if exclude is not None and feature in exclude:
