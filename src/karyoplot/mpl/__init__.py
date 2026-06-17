@@ -7,16 +7,14 @@ Modules:
     statistics:   Fisher exact, Mann-Whitney, BH-FDR, comparison runner
     heatmap:      clustered per-sample heatmap with optional covariate panel
     comparison:   volcano, dot-strip, lollipop plots; ``generate_all_plots``
-    legend:       (Phase 6) matplotlib legend helpers
 """
 
-from . import comparison, data_loader, heatmap, legend, statistics, style, types
+from . import comparison, data_loader, heatmap, statistics, style, types
 
 __all__ = [
     "comparison",
     "data_loader",
     "heatmap",
-    "legend",
     "statistics",
     "style",
     "types",

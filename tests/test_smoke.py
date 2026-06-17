@@ -22,4 +22,4 @@ def test_subpackage_imports():
     )
 
     # svg modules
-    from karyoplot.svg import drawing, export, ideogram, legend, reads, tracks  # noqa: F401
+    from karyoplot.svg import drawing, export, legend, reads  # noqa: F401

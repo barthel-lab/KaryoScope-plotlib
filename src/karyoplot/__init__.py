@@ -6,4 +6,6 @@ Subpackages:
     mpl:  matplotlib-based publication plots
 """
 
-__version__ = "0.1.0"
+from karyoplot._version import __version__
+
+__all__ = ["__version__"]

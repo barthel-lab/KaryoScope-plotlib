@@ -1,15 +1,44 @@
 [build-system]
-requires = ["setuptools>=61.0"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [project]
 name = "karyoplot"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Shared plotting library for KaryoScope analyses (drawsvg + matplotlib backends)"
 readme = "README.md"
 requires-python = ">=3.10"
+license = "GPL-3.0-or-later"
 authors = [
-    { name = "Floris Barthel", email = "fbarthel@tgen.org" },
+  { name = "Floris P. Barthel", email = "fbarthel@tgen.org" },
+  { name = "Timothy Rhyker Ranallo-Benavidez", email = "rranallo-benavidez@tgen.org" },
+]
+maintainers = [
+  { name = "Floris P. Barthel", email = "fbarthel@tgen.org" },
+  { name = "Timothy Rhyker Ranallo-Benavidez", email = "rranallo-benavidez@tgen.org" },
+]
+keywords = [
+  "bioinformatics",
+  "genomics",
+  "karyotype",
+  "cytogenetics",
+  "telomere",
+  "visualization",
+  "plotting",
+  "T2T",
+]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Science/Research",
+  "Topic :: Scientific/Engineering :: Bio-Informatics",
+  "Topic :: Scientific/Engineering :: Visualization",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Operating System :: POSIX :: Linux",
+  "Operating System :: MacOS",
 ]
 dependencies = [
     "drawsvg>=2.0",
@@ -23,11 +52,36 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=7.0", "pre-commit>=3.5"]
+dev = [
+  "pytest>=7.0",
+  "pytest-cov>=4.1",
+  "pre-commit>=3.5",
+]
 
-[tool.setuptools.packages.find]
-where = ["src"]
-include = ["karyoplot*"]
+[project.urls]
+Homepage = "https://github.com/barthel-lab/KaryoScope-plotlib"
+Documentation = "https://github.com/barthel-lab/KaryoScope-plotlib#readme"
+Repository = "https://github.com/barthel-lab/KaryoScope-plotlib"
+Issues = "https://github.com/barthel-lab/KaryoScope-plotlib/issues"
+Changelog = "https://github.com/barthel-lab/KaryoScope-plotlib/blob/main/CHANGELOG.md"
+
+# --- hatchling configuration ---
+
+[tool.hatch.version]
+path = "src/karyoplot/_version.py"
+
+[tool.hatch.build.targets.sdist]
+include = [
+  "src/",
+  "tests/",
+  "LICENSE",
+  "README.md",
+  "CHANGELOG.md",
+  "pyproject.toml",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/karyoplot"]
 
 # --- ruff (linter + formatter) ---
 # Config mirrors the sibling KaryoScope-analysis repo so the ecosystem lints
@@ -61,3 +115,32 @@ ignore = [
 [tool.ruff.format]
 quote-style = "double"
 indent-style = "space"
+
+# --- pytest ---
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+  "-ra",
+  "--strict-markers",
+  "--strict-config",
+]
+markers = [
+  "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+]
+
+[tool.coverage.run]
+source = ["src/karyoplot"]
+branch = true
+
+[tool.coverage.report]
+exclude_lines = [
+  "pragma: no cover",
+  "raise NotImplementedError",
+  "if __name__ == .__main__.:",
+  "if TYPE_CHECKING:",
+]

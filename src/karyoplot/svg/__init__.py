@@ -3,14 +3,10 @@
 Modules:
     drawing:  primitive helpers (rectangles, scale bars, annotation tracks, axes)
     legend:   legend builders (hexamer, grouped multi-track, standalone)
-    export:   SVG -> PNG via rsvg-convert
-
-Stubs awaiting Phase 6/7 migrations:
-    ideogram: whole-genome and zoom views
-    tracks:   multi-track layouts
     reads:    per-read fiber-seq vertical-bar layouts
+    export:   SVG -> PNG via rsvg-convert
 """
 
-from . import drawing, export, ideogram, legend, reads, tracks
+from . import drawing, export, legend, reads
 
-__all__ = ["drawing", "export", "ideogram", "legend", "reads", "tracks"]
+__all__ = ["drawing", "export", "legend", "reads"]
