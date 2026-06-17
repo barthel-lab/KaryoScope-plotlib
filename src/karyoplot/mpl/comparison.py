@@ -15,11 +15,15 @@ then iterates the per-comparison plots.
 
 from __future__ import annotations
 
+import logging
+
 import numpy as np
 import pandas as pd
 
 from .style import apply_default_style, fg_color, save_fig
 from .types import ComparisonConfig
+
+logger = logging.getLogger(__name__)
 
 
 def _arcsin_sqrt(pct):
@@ -154,13 +158,14 @@ def plot_dot_strip(
     x = np.arange(n_features)
     offset = 0.15
     edge_c = fg_color(config.dark_mode)
+    rng = np.random.default_rng(0)  # fixed seed -> reproducible jitter across renders
 
     for i, fg in enumerate(fg_names):
         a_vals = _arcsin_sqrt(a_rates[f"{fg}_rate"].values)
         b_vals = _arcsin_sqrt(b_rates[f"{fg}_rate"].values)
 
-        a_x = np.full(len(a_vals), x[i] - offset) + np.random.uniform(-0.06, 0.06, len(a_vals))
-        b_x = np.full(len(b_vals), x[i] + offset) + np.random.uniform(-0.06, 0.06, len(b_vals))
+        a_x = np.full(len(a_vals), x[i] - offset) + rng.uniform(-0.06, 0.06, len(a_vals))
+        b_x = np.full(len(b_vals), x[i] + offset) + rng.uniform(-0.06, 0.06, len(b_vals))
 
         ax.scatter(
             a_x,
@@ -434,7 +439,7 @@ def generate_all_plots(
 
     apply_default_style(config.dark_mode)
 
-    print("\n  Generating heatmap...")
+    logger.info("Generating heatmap")
     plot_heatmap(rates_df, config, output_prefix)
 
     for comp_label, stats_df in all_stats.items():
@@ -443,7 +448,7 @@ def generate_all_plots(
             continue
         cond_a_name, cond_b_name = parts
         comp_prefix = f"{output_prefix}.{comp_label}"
-        print(f"\n  Generating plots for {comp_label}...")
+        logger.info("Generating plots for %s", comp_label)
         plot_volcano(stats_df, config, comp_prefix, cond_a_name, cond_b_name)
         plot_dot_strip(rates_df, stats_df, config, comp_prefix, cond_a_name, cond_b_name)
         plot_lollipop(rates_df, stats_df, config, comp_prefix, cond_a_name, cond_b_name)

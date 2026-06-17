@@ -202,14 +202,16 @@ def test_compute_feature_values_missing_columns_returns_zero():
     assert list(out["x"]) == [0.0, 0.0]
 
 
-def test_load_annotations_warns_on_missing(tmp_path: Path, capsys):
+def test_load_annotations_warns_on_missing(tmp_path: Path, caplog):
+    import logging
+
     from karyoplot.mpl.data_loader import load_annotations
 
     cfg = _build_min_config(str(tmp_path))  # no files written
-    annots = load_annotations(cfg)
+    with caplog.at_level(logging.WARNING, logger="karyoplot.mpl.data_loader"):
+        annots = load_annotations(cfg)
     assert annots == {}
-    captured = capsys.readouterr()
-    assert "WARNING" in captured.out
+    assert any("not found" in r.message for r in caplog.records)
 
 
 # ----- statistics -----

@@ -12,11 +12,15 @@ The clustering helpers (:func:`fix_leaf_ordering`, :func:`push_leaves_to_edge`,
 
 from __future__ import annotations
 
+import logging
+
 import numpy as np
 import pandas as pd
 
 from .style import fg_color, save_fig
 from .types import ComparisonConfig, CovariateConfig
+
+logger = logging.getLogger(__name__)
 
 _DENDRO_COLOR_LIGHT = "black"
 _DENDRO_COLOR_DARK = "white"
@@ -175,7 +179,7 @@ def _load_covariate_data(
     try:
         cov_df = pd.read_csv(cov_config.file, sep="\t", dtype=str)
     except Exception as e:
-        print(f"  Warning: could not load covariate file {cov_config.file}: {e}")
+        logger.warning("could not load covariate file %s: %s", cov_config.file, e)
         return None
 
     cov_df = cov_df.set_index(cov_config.id_column)

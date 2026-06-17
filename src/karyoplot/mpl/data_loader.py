@@ -8,11 +8,14 @@ live in :mod:`karyoplot.mpl.types`.
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 import pandas as pd
 
 from .types import ComparisonConfig, Condition, FeatureGroup
+
+logger = logging.getLogger(__name__)
 
 
 def _needed_columns(config: ComparisonConfig) -> list[str]:
@@ -43,7 +46,7 @@ def load_annotations(config: ComparisonConfig) -> dict[str, pd.DataFrame]:
     for sample in all_samples:
         filepath = Path(config.annotations_dir) / f"{sample}.sequence_annotations.tsv.gz"
         if not filepath.exists():
-            print(f"  WARNING: not found: {filepath}")
+            logger.warning("not found: %s", filepath)
             continue
 
         df_header = pd.read_csv(filepath, sep="\t", nrows=0, compression="gzip")
@@ -55,7 +58,9 @@ def load_annotations(config: ComparisonConfig) -> dict[str, pd.DataFrame]:
                 df[col] = 0.0
 
         data[sample] = df
-        print(f"  {sample}: {len(df)} reads ({len(available)}/{len(needed)} columns found)")
+        logger.info(
+            "%s: %d reads (%d/%d columns found)", sample, len(df), len(available), len(needed)
+        )
 
     return data
 

@@ -14,6 +14,7 @@ Tests performed per feature group in :func:`compare_two_conditions`:
 from __future__ import annotations
 
 import itertools
+import logging
 
 import numpy as np
 import pandas as pd
@@ -21,6 +22,8 @@ from scipy.stats import combine_pvalues, fisher_exact, mannwhitneyu
 
 from .data_loader import compute_feature_values, get_pooled_data
 from .types import ComparisonConfig, Condition
+
+logger = logging.getLogger(__name__)
 
 
 def compare_two_conditions(
@@ -38,7 +41,7 @@ def compare_two_conditions(
     pooled_b = get_pooled_data(annotations, cond_b)
 
     if pooled_a.empty or pooled_b.empty:
-        print(f"  WARNING: empty data for {cond_a.name} or {cond_b.name}")
+        logger.warning("empty data for %s or %s", cond_a.name, cond_b.name)
         return pd.DataFrame()
 
     values_a = compute_feature_values(
@@ -252,7 +255,7 @@ def run_all_comparisons(
             if cond.name == ref_name:
                 continue
             label = f"{ref_name}_vs_{cond.name}"
-            print(f"\n  Comparing {ref_cond.label} vs {cond.label}...")
+            logger.info("Comparing %s vs %s", ref_cond.label, cond.label)
             stats = compare_two_conditions(annotations, ref_cond, cond, config)
             stats = apply_fdr(stats)
             results[label] = stats
@@ -264,7 +267,7 @@ def run_all_comparisons(
             pairs = list(itertools.combinations(conds, 2))
         for cond_a, cond_b in pairs:
             label = f"{cond_a.name}_vs_{cond_b.name}"
-            print(f"\n  Comparing {cond_a.label} vs {cond_b.label}...")
+            logger.info("Comparing %s vs %s", cond_a.label, cond_b.label)
             stats = compare_two_conditions(annotations, cond_a, cond_b, config)
             stats = apply_fdr(stats)
             results[label] = stats
