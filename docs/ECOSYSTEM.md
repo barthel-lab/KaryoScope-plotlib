@@ -19,8 +19,9 @@ rather than copy-pasted code.
 | **KaryoScope-analysis** (`karyoscope-analysis`) | Clustering (Engine A/B), annotation, cross-sample enrichment, and visualization CLI. | installable pkg + CLI | **in progress** |
 | **KaryoScope-ISCN** | ISCN cytogenetic reporting from assemblies: genome-wide karyotypes, multi-zoom breakpoint/centromere views, KromaTid (dGH) validation. | flat `scripts/` | reorg pending |
 | **KaryoScope-heatmap** | Per-read feature **co-occurrence** heatmaps ("telomere_crisis"); Snakemake workflow. | Snakemake + `scripts/` | reorg pending |
-| **KaryoScope-BIR** | Cohort **clustering + feature-comparison** analysis driver (NHA / Core-4 / IDH-astro cohorts). Origin of `karyoplot.mpl`'s comparison stack (`feature_comparison_lib`). | flat `scripts/` | reorg pending |
-| **KaryoScope-conductor** (`karyoscope-conductor`) | Lightweight YAML-driven workflow runner (≤10 sequential steps) that chains the CLIs. Complementary to Snakemake/Nextflow. | installable pkg + CLI | established |
+| **KaryoScope-BIR** | Cohort **clustering + feature-comparison** analysis driver (NHA / Core-4 / IDH-astro cohorts); the home for **experimental scripts**. Origin of `karyoplot.mpl`'s comparison stack (`feature_comparison_lib`); also holds the plotting-refactor design records (see below). | flat `scripts/` | reorg pending |
+| **KaryoScope-CHM13** | rDNA-array analysis on the acrocentrics (chr13/14/15/21/22): array structure, junctions, repeat-unit views. Origin of the `karyoscope_utils/` drawsvg helpers that became `karyoplot.svg`/`core`. | flat `scripts/` | reorg pending |
+| **KaryoScope-conductor** (`karyoscope-conductor`) | Lightweight YAML-driven workflow runner (≤10 sequential steps) that chains the CLIs; the home for **YAML/config orchestration**. Complementary to Snakemake/Nextflow. | installable pkg + CLI | established |
 
 ## Dependency / consumer graph
 
@@ -36,9 +37,22 @@ KaryoScope-databases ─ data ─┐
         │   │   └───────────────── mpl.heatmap ──────── KaryoScope-heatmap (co-occurrence)
         │   └───────── mpl.{data_loader,statistics,comparison,heatmap} ── KaryoScope-BIR (cohort)
         └─ svg.{ideogram,tracks,drawing} ── KaryoScope-ISCN (assembly/karyotype/zoom views)
+                                         └─ KaryoScope-CHM13 (rDNA-array / acrocentric views)
 
    KaryoScope-conductor ── orchestrates ──► the CLIs above (analysis, engine steps)
 ```
+
+## Design records (don't lose these)
+
+The full plotting-refactor history lives in **KaryoScope-BIR** (not under `~/Documents`):
+
+- `karyoscope_plotting_refactor_plan.md` — the master plan. Goal #3 sets the ecosystem's
+  separation of concerns: **plotting code** → this library + KaryoScope-analysis; **YAML/config
+  orchestration** → KaryoScope-conductor; **experimental scripts** → KaryoScope-BIR; **legacy** →
+  untouched in the KaryoScope engine.
+- `karyoscope_plotting_inventory.md` — per-script inventory (154 plotting scripts, backend-tagged).
+- `karyoscope_plotting_refactor_changelog.md` — running change log of the refactor.
+- `karyoscope_plotting_phase13_evaluation.md` — deep-extraction evaluation of the largest scripts.
 
 ## Why some `karyoplot` modules have "no consumer yet"
 
@@ -51,8 +65,9 @@ migrated:
   onto the package. **KaryoScope-heatmap** is a second consumer for `mpl.heatmap`.
 - **`karyoplot.svg.{ideogram, tracks}`** — these were deleted as empty stubs during the reorg, but
   the work they anticipated (whole-genome ideograms, multi-track assembly layouts) belongs to
-  **KaryoScope-ISCN**. They should be (re)added to `karyoplot.svg` *when ISCN migrates and needs
-  them*, built from ISCN's `KaryoScope_assembly_*` / contig-zoom patterns — not before.
+  **KaryoScope-ISCN** (and **KaryoScope-CHM13**'s rDNA-array / acrocentric track views). They should
+  be (re)added to `karyoplot.svg` *when those repos migrate and need them*, built from ISCN's
+  `KaryoScope_assembly_*` / contig-zoom and CHM13's `karyoscope_utils` patterns — not before.
 
 So when reorganizing ISCN / heatmap / BIR, the move is: pull shared rendering/stats **down** into
 `karyoplot` (extending `svg`/`mpl`), and have each repo consume it through the same stable APIs that

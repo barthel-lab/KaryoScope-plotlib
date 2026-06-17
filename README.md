@@ -6,22 +6,21 @@ Two backends share one core. `svg/` (drawsvg-based vector renderers) and `mpl/` 
 
 ## Install
 
-Editable install into your KaryoScope conda env:
+Editable install into your KaryoScope environment:
 
 ```bash
-cd ~/Documents/software/KaryoScope-plotlib
-pip install -e .
+pip install -e .          # from the repo root
+pip install ruff          # pinned in .pre-commit-config.yaml
 ```
 
 ## Used by
 
-| Repo | What it imports |
-|---|---|
-| `KaryoScope-analysis/` | `core.colors.{TAB10,TAB20}`, `core.fonts.{register_fonts,pil_font,resolve_family}`, `svg.export.svg_to_png` |
-| `KaryoScope-ISCN/` | `svg.export.svg_to_png(dpi=300)` |
-| `KaryoScope-conductor/` | `mpl.{data_loader,statistics,comparison,heatmap}`, `mpl.types` (via `karyoscope_conductor.feature_comparison_config`) |
-| `KaryoScope-BIR/` | `mpl.style.{apply_default_style,fg_color,save_fig,sig_label}`, `mpl.comparison._arcsin_sqrt` |
-| `KaryoScope-CHM13/` | not yet — annotated with future-migration headers (see Phase 8 in the refactor plan) |
+`karyoplot` is the shared plotting hub of the KaryoScope ecosystem; it is **DB-agnostic** (it takes
+already-resolved inputs — color maps, sort-key callables — not database files). For the full
+repo-by-repo consumer graph (including modules currently staged ahead of their consumers), see
+[`docs/ECOSYSTEM.md`](docs/ECOSYSTEM.md). In brief: `KaryoScope-analysis` uses `svg.{legend,reads,export}`
++ `mpl.style`; the `mpl` comparison stack is consumed by `KaryoScope-BIR` / `KaryoScope-heatmap`;
+`KaryoScope-ISCN` will consume the `svg` assembly/ideogram views.
 
 ## Module map
 
@@ -88,24 +87,27 @@ svg_to_png("legend.svg", scale=4)                    # → legend.png
 ## Tests
 
 ```bash
-cd ~/Documents/software/KaryoScope-plotlib
-pytest tests/ -q
+pytest -q          # from the repo root
+ruff check src tests
 ```
 
-Currently **70 unit tests** covering all `core/`, `svg/`, and `mpl/` modules, including end-to-end heatmap + dot-strip rendering with synthetic fixtures.
+**133 unit tests** cover all `core/`, `svg/`, and `mpl/` modules, including end-to-end heatmap +
+dot-strip rendering with synthetic fixtures.
 
 ## Status
 
-This library was extracted in 2026-04 from duplicated patterns scattered across:
+This library was extracted from duplicated plotting patterns scattered across the KaryoScope
+scripts — `KaryoScope-CHM13/scripts/karyoscope_utils/` (drawsvg helpers, color/data loaders),
+`KaryoScope-BIR/scripts/feature_comparison_lib/` (matplotlib comparison plots, statistics, data
+loader), and inline implementations across 150+ plotting scripts (font registration, BED IO,
+chromosome sort, color loaders, `_svg_to_png` wrappers, …).
 
-- `KaryoScope-CHM13/scripts/karyoscope_utils/` (drawsvg helpers, color/data loaders)
-- `KaryoScope-BIR/scripts/feature_comparison_lib/` (matplotlib comparison plots, statistics, data loader)
-- Inline implementations in 40+ plotting scripts (font registration, BED IO, chromosome sort, color file loaders, `_svg_to_png` wrappers, …)
+- [`docs/migration_guide.md`](docs/migration_guide.md) — porting an existing script.
+- [`docs/ECOSYSTEM.md`](docs/ECOSYSTEM.md) — the repo map + consumer graph.
+- [`docs/mpl_audit.md`](docs/mpl_audit.md) — the `mpl` audit notes.
+- [`CHANGELOG.md`](CHANGELOG.md), [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
-See [`docs/migration_guide.md`](docs/migration_guide.md) for porting an existing script.
-
-The full refactor plan, decision log, and changelog live in `~/Documents/KaryoScope-BIR/`:
-
-- `karyoscope_plotting_refactor_plan.md` — 12-phase master plan
-- `karyoscope_plotting_refactor_changelog.md` — running log of every change
-- `karyoscope_plotting_inventory.md` — per-script inventory
+The full plotting-refactor master plan, per-script inventory, deep-extraction evaluation, and change
+log live in the **KaryoScope-BIR** repo (`karyoscope_plotting_refactor_plan.md`,
+`karyoscope_plotting_inventory.md`, `karyoscope_plotting_phase13_evaluation.md`,
+`karyoscope_plotting_refactor_changelog.md`).
