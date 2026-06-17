@@ -202,6 +202,46 @@ def test_compute_feature_values_missing_columns_returns_zero():
     assert list(out["x"]) == [0.0, 0.0]
 
 
+def test_compute_read_level_table(tmp_path: Path):
+    from karyoplot.mpl.data_loader import compute_read_level_table, load_annotations
+
+    _make_annot_file(tmp_path, "s1")
+    _make_annot_file(tmp_path, "s2")
+    cfg = _build_min_config(str(tmp_path))
+
+    annots = load_annotations(cfg)
+    table = compute_read_level_table(annots, cfg)
+
+    assert list(table.columns) == [
+        "read_id",
+        "group",
+        "subgroup",
+        "sample",
+        "sequencing_approach",
+    ]
+    # group is the feature-group label; subgroup is the condition label.
+    assert set(table["group"]) <= {"LINE-1", "Alu"}
+    assert set(table["subgroup"]) <= {"A", "B"}
+    # Only reads above threshold (0.5) appear; both fixtures have 2 such L1 reads.
+    assert (table["group"] == "LINE-1").sum() == 4
+
+
+def test_compute_read_level_table_splits_read_id(tmp_path: Path):
+    from karyoplot.mpl.data_loader import compute_read_level_table
+
+    df = pd.DataFrame(
+        {
+            "sequence": ["readA;extra;bits", "readB"],
+            "sequencing_approach": ["ONT", "ONT"],
+            "repeat_dmax__L1": [0.9, 0.9],
+        }
+    )
+    cfg = _build_min_config(str(tmp_path))
+    table = compute_read_level_table({"s1": df}, cfg)
+    # ";"-delimited ids are truncated to the first field.
+    assert set(table["read_id"]) == {"readA", "readB"}
+
+
 def test_load_annotations_warns_on_missing(tmp_path: Path, caplog):
     import logging
 
@@ -254,6 +294,47 @@ def test_compare_two_conditions_smoke(tmp_path: Path):
     assert "pooled_fisher_p" in stats.columns
     assert "log2FC" in stats.columns
     assert set(stats["feature"]) == {"L1", "Alu"}
+
+
+def test_run_all_comparisons_reference_mode(tmp_path: Path):
+    from karyoplot.mpl.data_loader import load_annotations
+    from karyoplot.mpl.statistics import run_all_comparisons
+
+    _make_annot_file(tmp_path, "s1")
+    _make_annot_file(tmp_path, "s2")
+    cfg = _build_min_config(str(tmp_path))  # reference mode, reference_condition="a"
+    annots = load_annotations(cfg)
+
+    results = run_all_comparisons(annots, cfg)
+
+    # reference mode → one comparison per non-reference condition.
+    assert set(results) == {"a_vs_b"}
+    stats = results["a_vs_b"]
+    assert set(stats["feature"]) == {"L1", "Alu"}
+    # run_all_comparisons applies BH-FDR, so _fdr columns are present.
+    assert any(c.endswith("_fdr") for c in stats.columns)
+    assert "pooled_fisher_p_fdr" in stats.columns
+
+
+def test_run_all_comparisons_pairwise_mode(tmp_path: Path):
+    from karyoplot.mpl.data_loader import load_annotations
+    from karyoplot.mpl.statistics import run_all_comparisons
+    from karyoplot.mpl.types import Condition
+
+    for s in ("s1", "s2", "s3"):
+        _make_annot_file(tmp_path, s)
+    cfg = _build_min_config(str(tmp_path))
+    cfg.comparison_mode = "pairwise"
+    cfg.conditions = {
+        "a": Condition("a", "A", "#FF0000", ["s1"]),
+        "b": Condition("b", "B", "#00FF00", ["s2"]),
+        "c": Condition("c", "C", "#0000FF", ["s3"]),
+    }
+    annots = load_annotations(cfg)
+
+    results = run_all_comparisons(annots, cfg)
+    # all unordered pairs of 3 conditions.
+    assert set(results) == {"a_vs_b", "a_vs_c", "b_vs_c"}
 
 
 # ----- heatmap helpers -----
