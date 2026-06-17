@@ -43,7 +43,7 @@ pip install -e .
 | `drawing` | `draw_annotation_track()`, `draw_hexamer_track()`, `draw_axis()`, `draw_centered_track_labels()` (ported from `karyoscope_utils.drawing`; `font_family` defaults to `sans-serif`) |
 | `legend` | `draw_hexamer_legend()`, `draw_grouped_legend(layout="column"\|"vertical")`, `make_legend_drawing()` (full-page auto-layout with header support, color merging), `featureset_legend_items()`, `merge_by_color()`, `clean_label()` |
 | `export` | `svg_to_png(scale=N \| dpi=N)` (rsvg-convert wrapper), `is_rsvg_convert_available()`, `RsvgConvertMissingError` |
-| `ideogram`, `tracks`, `reads` | (stubs — to be populated when scripts migrate) |
+| `reads` | `rasterize_features()`, `smooth_features_to_pixels()`, `features_to_pixels_direct()` (per-read feature bp → pixel runs) |
 
 ### `karyoplot.mpl` — matplotlib backend
 
