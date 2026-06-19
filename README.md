@@ -13,6 +13,13 @@ pip install -e .          # from the repo root
 pip install ruff          # pinned in .pre-commit-config.yaml
 ```
 
+`svg_to_png` (SVG → PNG export) shells out to `rsvg-convert`; install it from
+conda-forge if you want PNG output (it is part of the shared KaryoScope env):
+
+```bash
+conda install -c conda-forge librsvg   # provides rsvg-convert
+```
+
 ## Used by
 
 `karyoplot` is the shared plotting hub of the KaryoScope ecosystem; it is **DB-agnostic** (it takes
