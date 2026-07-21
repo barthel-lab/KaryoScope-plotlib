@@ -43,9 +43,42 @@ class FeatureGroup:
     features: list[str]
     aggregation: str = "single"  # "single" or "sum"
 
-    def get_columns(self, featureset: str, metric: str) -> list[str]:
-        """Build full column names from featureset and metric."""
-        return [f"{featureset}_{metric}__{f}" for f in self.features]
+    def get_columns(
+        self,
+        featureset: str,
+        metric: str,
+        descendants: dict[str, list[str]] | None = None,
+    ) -> list[str]:
+        """Build full column names ``{featureset}__{metric}__{feature}``.
+
+        ``__`` is the sole delimiter so featureset/metric/feature names containing
+        single underscores (``region_subtelomere_flat``, ``dterminal_min``,
+        ``active_hor``) stay unambiguous, and to match the columns emitted by
+        ``karyoscope-analysis build-feature-matrix``.
+
+        When ``descendants`` is given — a resolved ``{feature: [feature, *descendants]}``
+        map derived from the DB hierarchy by the (DB-aware) consumer — each referenced
+        feature is expanded to its whole hierarchy subtree. So a group referencing a
+        parent (e.g. ``aSat``) covers all of its descendants (``alpha_hor``,
+        ``active_hor``, ``mon``, …), which is correct because the flat annotation labels
+        each interval at exactly one node. A referenced feature that is **not** a node
+        in ``descendants`` raises ``KeyError`` — a missing feature is a typo/stale name
+        to fix, not a silent zero.
+        """
+        if descendants is None:
+            feats = list(self.features)
+        else:
+            feats = []
+            for f in self.features:
+                if f not in descendants:
+                    raise KeyError(
+                        f"feature {f!r} in group {self.name!r} is not a node in the DB "
+                        "hierarchy for this featureset — check the feature name"
+                    )
+                for d in descendants[f]:
+                    if d not in feats:
+                        feats.append(d)
+        return [f"{featureset}__{metric}__{f}" for f in feats]
 
 
 @dataclass
@@ -104,3 +137,9 @@ class ComparisonConfig:
     dark_mode: bool = False
     covariates: CovariateConfig | None = None
     comparisons: list[tuple[str, str]] | None = None
+    #: Resolved DB-hierarchy closure ``{feature: [feature, *descendants]}`` for this
+    #: config's featureset, supplied by the (DB-aware) consumer. When set, feature
+    #: groups are expanded to whole hierarchy subtrees and unknown features error.
+    #: ``None`` keeps the literal (non-hierarchy) behavior. karyoplot stays DB-agnostic:
+    #: it receives this resolved map, never a hierarchy file.
+    feature_descendants: dict[str, list[str]] | None = None

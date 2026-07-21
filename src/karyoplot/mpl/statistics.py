@@ -45,10 +45,18 @@ def compare_two_conditions(
         return pd.DataFrame()
 
     values_a = compute_feature_values(
-        pooled_a, config.feature_groups, config.featureset, config.metric
+        pooled_a,
+        config.feature_groups,
+        config.featureset,
+        config.metric,
+        config.feature_descendants,
     )
     values_b = compute_feature_values(
-        pooled_b, config.feature_groups, config.featureset, config.metric
+        pooled_b,
+        config.feature_groups,
+        config.featureset,
+        config.metric,
+        config.feature_descendants,
     )
 
     stat_rows = []
@@ -84,7 +92,7 @@ def compare_two_conditions(
                 continue
             a_df = annotations[a_sample]
             a_vals_s = compute_feature_values(
-                a_df, {fg_name: fg}, config.featureset, config.metric
+                a_df, {fg_name: fg}, config.featureset, config.metric, config.feature_descendants
             )[fg_name]
             ac = int((a_vals_s > config.threshold).sum())
             at = len(a_df)
@@ -99,9 +107,9 @@ def compare_two_conditions(
             if b_sample not in annotations:
                 continue
             b_df = annotations[b_sample]
-            b_vals = compute_feature_values(b_df, {fg_name: fg}, config.featureset, config.metric)[
-                fg_name
-            ]
+            b_vals = compute_feature_values(
+                b_df, {fg_name: fg}, config.featureset, config.metric, config.feature_descendants
+            )[fg_name]
             bc = int((b_vals > config.threshold).sum())
             bt = len(b_df)
             br = bc / bt * 100 if bt > 0 else 0.0

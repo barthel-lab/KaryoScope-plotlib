@@ -25,9 +25,31 @@ def test_feature_group_columns():
         name="repeats", label="Repeats", color="#FF0000", features=["L1", "Alu"], aggregation="sum"
     )
     assert fg.get_columns("repeat", "dmax") == [
-        "repeat_dmax__L1",
-        "repeat_dmax__Alu",
+        "repeat__dmax__L1",
+        "repeat__dmax__Alu",
     ]
+
+
+def test_get_columns_hierarchy_expansion():
+    from karyoplot.mpl.types import FeatureGroup
+
+    # Resolved DB-hierarchy closure {feature: [feature, *descendants]}.
+    descendants = {
+        "aSat": ["aSat", "active_hor", "mon"],
+        "active_hor": ["active_hor"],
+        "mon": ["mon"],
+    }
+    # A group referencing the parent expands to its whole subtree.
+    fg = FeatureGroup("asat", "aSat", "#f00", features=["aSat"])
+    assert fg.get_columns("region", "dmax", descendants) == [
+        "region__dmax__aSat",
+        "region__dmax__active_hor",
+        "region__dmax__mon",
+    ]
+    # A feature that is not a hierarchy node is a typo/stale name -> KeyError.
+    bad = FeatureGroup("x", "X", "#000", features=["not_a_feature"])
+    with pytest.raises(KeyError, match="not a node in the DB hierarchy"):
+        bad.get_columns("region", "dmax", descendants)
 
 
 def test_comparison_config_minimal_construction():
@@ -137,8 +159,8 @@ def _make_annot_file(dirpath: Path, sample: str, n_reads: int = 4) -> None:
         {
             "sequence": [f"{sample}_read{i}" for i in range(n_reads)],
             "sequencing_approach": ["ONT"] * n_reads,
-            "repeat_dmax__L1": np.linspace(0.1, 0.9, n_reads),
-            "repeat_dmax__Alu": [0.2, 0.6, 0.8, 0.4][:n_reads],
+            "repeat__dmax__L1": np.linspace(0.1, 0.9, n_reads),
+            "repeat__dmax__Alu": [0.2, 0.6, 0.8, 0.4][:n_reads],
         }
     )
     df.to_csv(
@@ -183,8 +205,8 @@ def test_compute_feature_values_sum_aggregation(tmp_path: Path):
 
     df = pd.DataFrame(
         {
-            "repeat_dmax__L1": [0.2, 0.3],
-            "repeat_dmax__Alu": [0.1, 0.4],
+            "repeat__dmax__L1": [0.2, 0.3],
+            "repeat__dmax__Alu": [0.1, 0.4],
         }
     )
     fg = FeatureGroup("composite", "Composite", "#000", features=["L1", "Alu"], aggregation="sum")
@@ -233,7 +255,7 @@ def test_compute_read_level_table_splits_read_id(tmp_path: Path):
         {
             "sequence": ["readA;extra;bits", "readB"],
             "sequencing_approach": ["ONT", "ONT"],
-            "repeat_dmax__L1": [0.9, 0.9],
+            "repeat__dmax__L1": [0.9, 0.9],
         }
     )
     cfg = _build_min_config(str(tmp_path))
@@ -242,24 +264,28 @@ def test_compute_read_level_table_splits_read_id(tmp_path: Path):
     assert set(table["read_id"]) == {"readA", "readB"}
 
 
-def test_load_annotations_raises_on_missing_feature_column(tmp_path: Path):
-    from karyoplot.mpl.data_loader import load_annotations
+def test_load_annotations_normalizes_seq_id_and_zero_fills_absent(tmp_path: Path):
+    from karyoplot.mpl.data_loader import compute_feature_values, load_annotations
 
-    # A file that lacks a requested feature column must error, not 0-fill.
+    # build-feature-matrix output: key column is ``seq_id``, and a feature with 0
+    # reads in this sample (Alu) simply has no column. Validity is enforced at
+    # expansion, so an absent *valid* feature is 0-filled, not an error.
     df = pd.DataFrame(
         {
-            "sequence": ["s1_read0"],
-            "sequencing_approach": ["ONT"],
-            "repeat_dmax__L1": [0.9],
-            # "repeat_dmax__Alu" intentionally absent
+            "seq_id": ["s1_read0", "s1_read1"],
+            "repeat__dmax__L1": [0.9, 0.1],
+            # "repeat__dmax__Alu" intentionally absent
         }
     )
     df.to_csv(
         tmp_path / "s1.sequence_annotations.tsv.gz", sep="\t", index=False, compression="gzip"
     )
     cfg = _build_min_config(str(tmp_path))
-    with pytest.raises(KeyError, match="missing feature column"):
-        load_annotations(cfg)
+    annots = load_annotations(cfg)
+    assert "sequence" in annots["s1"].columns  # seq_id normalized to sequence
+    assert "repeat__dmax__Alu" in annots["s1"].columns  # valid-but-absent -> 0-filled
+    vals = compute_feature_values(annots["s1"], cfg.feature_groups, cfg.featureset, cfg.metric)
+    assert list(vals["Alu"]) == [0.0, 0.0]
 
 
 def test_load_annotations_warns_on_missing(tmp_path: Path, caplog):

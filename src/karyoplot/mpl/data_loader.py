@@ -19,28 +19,31 @@ logger = logging.getLogger(__name__)
 
 
 def _needed_columns(config: ComparisonConfig) -> list[str]:
-    """Get list of all annotation columns needed for this config."""
-    cols = {"sequence", "sequencing_approach"}
+    """Feature columns needed for this config, plus the read-id key ``sequence``."""
+    cols = {"sequence"}
     for fg in config.feature_groups.values():
-        cols.update(fg.get_columns(config.featureset, config.metric))
+        cols.update(fg.get_columns(config.featureset, config.metric, config.feature_descendants))
     return sorted(cols)
 
 
 def load_annotations(config: ComparisonConfig) -> dict[str, pd.DataFrame]:
-    """Load sequence annotation TSVs for all samples in all conditions.
+    """Load the per-read feature table for every sample in every condition.
 
-    Only reads the columns needed for the configured feature groups. Missing
-    columns (e.g. ``hsat1A`` absent from samples with no such reads) are
-    filled with 0.
+    Consumes the wide per-read matrix from ``build-feature-matrix`` (read-id key
+    ``seq_id``) or the legacy ``sequence_annotations`` (key ``sequence``); the key
+    is normalized to ``sequence``. Feature-name validity is enforced upstream at
+    expansion (:meth:`FeatureGroup.get_columns` raises on a non-hierarchy feature),
+    so a *valid* feature column that is merely absent from a sample (0 reads of it)
+    is filled with 0 here rather than treated as an error.
 
     Returns:
-        Mapping ``{sample_name: DataFrame}``.
+        Mapping ``{sample_name: DataFrame}`` (each has a ``sequence`` column).
     """
     all_samples: list[str] = []
     for cond in config.conditions.values():
         all_samples.extend(cond.samples)
 
-    needed = _needed_columns(config)
+    feature_cols = [c for c in _needed_columns(config) if c != "sequence"]
     data: dict[str, pd.DataFrame] = {}
 
     for sample in all_samples:
@@ -49,29 +52,27 @@ def load_annotations(config: ComparisonConfig) -> dict[str, pd.DataFrame]:
             logger.warning("not found: %s", filepath)
             continue
 
-        df_header = pd.read_csv(filepath, sep="\t", nrows=0, compression="gzip")
-        available = [c for c in needed if c in df_header.columns]
-        df = pd.read_csv(filepath, sep="\t", usecols=available, compression="gzip")
+        header = pd.read_csv(filepath, sep="\t", nrows=0, compression="gzip")
+        # Read-id key: build-feature-matrix uses ``seq_id``; the legacy table uses
+        # ``sequence``. Normalize to ``sequence``.
+        key = "seq_id" if "seq_id" in header.columns else "sequence"
+        usecols = [c for c in feature_cols if c in header.columns] + [key]
+        df = pd.read_csv(filepath, sep="\t", usecols=usecols, compression="gzip")
+        if key != "sequence":
+            df = df.rename(columns={key: "sequence"})
 
-        # A requested feature column that is absent from the schema is a data
-        # error (a feature name that doesn't exist / isn't in the colors file),
-        # not a silent zero. Meta columns are exempt. Fail loud so the user fixes
-        # the config or colors file rather than getting an all-zero comparison.
-        missing = [
-            c
-            for c in needed
-            if c not in df.columns and c not in ("sequence", "sequencing_approach")
-        ]
-        if missing:
-            raise KeyError(
-                f"{filepath}: missing feature column(s) {missing}. These features are "
-                "not present in the sequence-annotations schema — check the feature "
-                "names against the DB hierarchy / colors file (they are not 0-filled)."
-            )
+        n_present = sum(1 for c in feature_cols if c in df.columns)
+        for c in feature_cols:  # valid-but-absent feature (0 reads) -> 0
+            if c not in df.columns:
+                df[c] = 0.0
 
         data[sample] = df
         logger.info(
-            "%s: %d reads (%d/%d columns found)", sample, len(df), len(available), len(needed)
+            "%s: %d reads (%d/%d feature columns present)",
+            sample,
+            len(df),
+            n_present,
+            len(feature_cols),
         )
 
     return data
@@ -82,19 +83,20 @@ def compute_feature_values(
     feature_groups: dict[str, FeatureGroup],
     featureset: str,
     metric: str,
+    descendants: dict[str, list[str]] | None = None,
 ) -> dict[str, pd.Series]:
     """Compute per-read feature values for all defined groups.
 
-    For composite groups (``aggregation="sum"``), sums the constituent columns.
-    For single-feature groups, returns the column directly.
+    Each group's value is the sum of its constituent feature columns present in
+    ``df`` (hierarchy-expanded when ``descendants`` is given); absent columns are 0.
     """
     result: dict[str, pd.Series] = {}
     for fg_name, fg in feature_groups.items():
-        columns = fg.get_columns(featureset, metric)
+        columns = fg.get_columns(featureset, metric, descendants)
         available = [c for c in columns if c in df.columns]
         if not available:
             result[fg_name] = pd.Series(0.0, index=df.index)
-        elif fg.aggregation == "sum" and len(available) > 1:
+        elif descendants is not None or (fg.aggregation == "sum" and len(available) > 1):
             result[fg_name] = df[available].fillna(0).sum(axis=1)
         else:
             result[fg_name] = df[available[0]].fillna(0)
@@ -122,7 +124,13 @@ def compute_per_sample_rates(
         if cond is None:
             continue
 
-        values = compute_feature_values(df, config.feature_groups, config.featureset, config.metric)
+        values = compute_feature_values(
+            df,
+            config.feature_groups,
+            config.featureset,
+            config.metric,
+            config.feature_descendants,
+        )
 
         row = {
             "sample": sample,
@@ -158,7 +166,13 @@ def compute_read_level_table(
         if cond is None:
             continue
 
-        values = compute_feature_values(df, config.feature_groups, config.featureset, config.metric)
+        values = compute_feature_values(
+            df,
+            config.feature_groups,
+            config.featureset,
+            config.metric,
+            config.feature_descendants,
+        )
         seq_approach = df["sequencing_approach"] if "sequencing_approach" in df.columns else None
 
         for fg_name, vals in values.items():

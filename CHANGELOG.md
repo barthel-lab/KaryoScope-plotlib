@@ -18,12 +18,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Feature-comparison is now hierarchy-aware and consumes `build-feature-matrix`.**
+  - Column schema uses `__` as the sole delimiter (`{featureset}__{metric}__{feature}`), matching
+    `karyoscope-analysis build-feature-matrix` (was a single `_` between featureset and metric,
+    ambiguous for names like `region_subtelomere_flat` / `dterminal_min` / `active_hor`).
+  - New `ComparisonConfig.feature_descendants` — a resolved `{feature: [feature, *descendants]}`
+    map the DB-aware consumer supplies — expands each feature group to its whole DB-hierarchy
+    subtree, so a group referencing a parent (`aSat`) covers `active_hor`/`mon`/… . karyoplot stays
+    DB-agnostic (it receives the resolved map, never a hierarchy file).
+  - A referenced feature that is **not** a hierarchy node raises (fail loud on a typo/stale name);
+    a *valid* feature merely absent from a sample (0 reads) is 0-filled, not an error.
+  - `mpl.data_loader.load_annotations` accepts `build-feature-matrix`'s `seq_id` key (normalized to
+    `sequence`) and no longer requires `sequencing_approach`.
 - **Colors now fail loud on a miss instead of silently defaulting** (matching the engine's
   `validate_colors` philosophy): `core.colors.get_color` raises `KeyError` when a feature has
-  no color and no explicit `default` is passed (was: silent grey `#CCCCCC`);
-  `core.colors.load_featureset_palettes` defaults `on_missing="error"` (was `"warn"`); and
-  `mpl.data_loader.load_annotations` raises on a missing requested feature column instead of
-  0-filling it.
+  no color and no explicit `default` is passed (was: silent grey `#CCCCCC`); and
+  `core.colors.load_featureset_palettes` defaults `on_missing="error"` (was `"warn"`).
 - `core.fonts.pil_font` now falls back to matplotlib's bundled **DejaVu Sans at the
   requested size** before Pillow's fixed ~10 px bitmap default. On hosts lacking Basic
   Sans / Arial (e.g. headless compute nodes) raster labels stay legible instead of
