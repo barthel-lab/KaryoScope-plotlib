@@ -242,6 +242,26 @@ def test_compute_read_level_table_splits_read_id(tmp_path: Path):
     assert set(table["read_id"]) == {"readA", "readB"}
 
 
+def test_load_annotations_raises_on_missing_feature_column(tmp_path: Path):
+    from karyoplot.mpl.data_loader import load_annotations
+
+    # A file that lacks a requested feature column must error, not 0-fill.
+    df = pd.DataFrame(
+        {
+            "sequence": ["s1_read0"],
+            "sequencing_approach": ["ONT"],
+            "repeat_dmax__L1": [0.9],
+            # "repeat_dmax__Alu" intentionally absent
+        }
+    )
+    df.to_csv(
+        tmp_path / "s1.sequence_annotations.tsv.gz", sep="\t", index=False, compression="gzip"
+    )
+    cfg = _build_min_config(str(tmp_path))
+    with pytest.raises(KeyError, match="missing feature column"):
+        load_annotations(cfg)
+
+
 def test_load_annotations_warns_on_missing(tmp_path: Path, caplog):
     import logging
 

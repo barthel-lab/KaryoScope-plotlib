@@ -82,11 +82,15 @@ def test_hex_to_rgba_alpha():
     assert hex_to_rgba("#F07167", alpha=128) == (240, 113, 103, 128)
 
 
-def test_get_color_default_fallback():
-    from karyoplot.core.colors import DEFAULT_COLOR, get_color
+def test_get_color_raises_on_missing():
+    from karyoplot.core.colors import get_color
 
-    assert get_color("missing", {"a": "#111111"}) == DEFAULT_COLOR
     assert get_color("a", {"a": "#111111"}) == "#111111"
+    # A missing feature is a data error, not a silent grey swatch.
+    with pytest.raises(KeyError):
+        get_color("missing", {"a": "#111111"})
+    # An explicit default is still honored when a fallback is genuinely intended.
+    assert get_color("missing", {"a": "#111111"}, default="#000000") == "#000000"
 
 
 def test_barthel_palette_keys():

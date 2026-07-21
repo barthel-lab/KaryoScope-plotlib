@@ -53,9 +53,21 @@ def load_annotations(config: ComparisonConfig) -> dict[str, pd.DataFrame]:
         available = [c for c in needed if c in df_header.columns]
         df = pd.read_csv(filepath, sep="\t", usecols=available, compression="gzip")
 
-        for col in needed:
-            if col not in df.columns and col != "sequence":
-                df[col] = 0.0
+        # A requested feature column that is absent from the schema is a data
+        # error (a feature name that doesn't exist / isn't in the colors file),
+        # not a silent zero. Meta columns are exempt. Fail loud so the user fixes
+        # the config or colors file rather than getting an all-zero comparison.
+        missing = [
+            c
+            for c in needed
+            if c not in df.columns and c not in ("sequence", "sequencing_approach")
+        ]
+        if missing:
+            raise KeyError(
+                f"{filepath}: missing feature column(s) {missing}. These features are "
+                "not present in the sequence-annotations schema — check the feature "
+                "names against the DB hierarchy / colors file (they are not 0-filled)."
+            )
 
         data[sample] = df
         logger.info(

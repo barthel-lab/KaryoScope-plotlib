@@ -191,7 +191,7 @@ def load_featureset_palettes(
     database: str,
     featuresets,
     *,
-    on_missing: str = "warn",
+    on_missing: str = "error",
     value_format: str = "tuple",
     background: str | None = None,
     track_order: bool = False,
@@ -206,10 +206,10 @@ def load_featureset_palettes(
         colors_dir: Directory containing the per-featureset color files.
         database: Database token (e.g. ``"KS_human_CHM13_v2"``).
         featuresets: Iterable of featureset names.
-        on_missing: ``"warn"`` (print warning, fall back to defaults if any),
-            ``"error"`` (write to stderr and ``sys.exit(1)`` — matches
-            cluster_plot's strict mode), ``"silent"`` (empty dict, no output).
-            Default ``"warn"``.
+        on_missing: ``"error"`` (write to stderr and ``sys.exit(1)`` — a missing
+            colors file is a hard error the user must fix), ``"warn"`` (print
+            warning, fall back to defaults if any), ``"silent"`` (empty dict, no
+            output). Default ``"error"``.
         value_format: ``"hex"`` or ``"tuple"``; passed through to
             :func:`load_palette_file`.
         background: If given (``"black"`` or ``"white"``), each featureset
@@ -326,10 +326,21 @@ def load_palettes(
 def get_color(
     feature: str,
     palette: dict[str, str],
-    default: str = DEFAULT_COLOR,
+    default: str | None = None,
 ) -> str:
-    """Look up ``feature`` in ``palette``; return ``default`` if missing."""
-    return palette.get(feature, default)
+    """Look up ``feature``'s color in ``palette``.
+
+    Raises ``KeyError`` when ``feature`` is absent and no explicit ``default`` is
+    given: a missing color is a data error the user should fix in the colors file,
+    not something to paper over with a grey swatch (matching the engine's
+    ``validate_colors`` philosophy). Pass ``default`` only when a fallback is
+    genuinely intended (e.g. a pre-seeded ``novel`` sentinel).
+    """
+    if feature in palette:
+        return palette[feature]
+    if default is not None:
+        return default
+    raise KeyError(f"no color for feature {feature!r} in palette; add it to the colors file")
 
 
 def hex_to_rgb(hex_str: str) -> tuple[int, int, int]:

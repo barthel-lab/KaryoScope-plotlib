@@ -18,6 +18,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Colors now fail loud on a miss instead of silently defaulting** (matching the engine's
+  `validate_colors` philosophy): `core.colors.get_color` raises `KeyError` when a feature has
+  no color and no explicit `default` is passed (was: silent grey `#CCCCCC`);
+  `core.colors.load_featureset_palettes` defaults `on_missing="error"` (was `"warn"`); and
+  `mpl.data_loader.load_annotations` raises on a missing requested feature column instead of
+  0-filling it.
 - `core.fonts.pil_font` now falls back to matplotlib's bundled **DejaVu Sans at the
   requested size** before Pillow's fixed ~10 px bitmap default. On hosts lacking Basic
   Sans / Arial (e.g. headless compute nodes) raster labels stay legible instead of
