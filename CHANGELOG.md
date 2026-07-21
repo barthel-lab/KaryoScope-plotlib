@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `core.fonts.pil_font` now falls back to matplotlib's bundled **DejaVu Sans at the
+  requested size** before Pillow's fixed ~10 px bitmap default. On hosts lacking Basic
+  Sans / Arial (e.g. headless compute nodes) raster labels stay legible instead of
+  collapsing to ~10 px. (Upstreamed from a KaryoScope-BIR vendor patch.)
 - **Packaging brought to parity with KaryoScope-analysis:** build backend switched
   from `setuptools` to `hatchling`, version is now dynamic (single source of truth in
   `src/karyoplot/_version.py`), and `[project]` metadata (license, classifiers,

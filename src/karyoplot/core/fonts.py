@@ -103,7 +103,8 @@ def pil_font(size: int, family: str = "Basic Sans", fallback: str = "Arial"):
 
     1. ``BARTHEL_FONT_DIR / <font_file>`` for the requested ``family``.
     2. The system font named ``fallback`` (e.g. ``Arial``).
-    3. Pillow's bundled default (always succeeds).
+    3. matplotlib's bundled DejaVu Sans at the requested ``size``.
+    4. Pillow's bundled default (always succeeds, but a fixed ~10 px bitmap).
 
     Returns the loaded ``ImageFont`` instance. Never raises.
     """
@@ -122,5 +123,16 @@ def pil_font(size: int, family: str = "Basic Sans", fallback: str = "Arial"):
             return ImageFont.truetype(fallback, size)
         except OSError:
             pass
+
+    # Before Pillow's fixed ~10 px bitmap default: matplotlib bundles DejaVu Sans
+    # and is a karyoplot dependency, so use it at the requested ``size``. This keeps
+    # raster labels legible on hosts that lack Basic Sans / Arial (e.g. headless
+    # compute nodes) instead of collapsing every label to the load_default() bitmap.
+    try:
+        from matplotlib import font_manager as _fm
+
+        return ImageFont.truetype(_fm.findfont("DejaVu Sans", fallback_to_default=True), size)
+    except Exception:
+        pass
 
     return ImageFont.load_default()

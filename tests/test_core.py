@@ -177,6 +177,20 @@ def test_pil_font_returns_imagefont_for_unknown_family():
     assert isinstance(f, (ImageFont.ImageFont, ImageFont.FreeTypeFont))
 
 
+def test_pil_font_uses_scalable_dejavu_when_brand_fonts_absent():
+    """Without Basic Sans / Arial, fall back to a *scalable* DejaVu at the requested
+    size rather than Pillow's fixed ~10 px bitmap default (labels stayed legible on
+    headless compute nodes)."""
+    pytest.importorskip("matplotlib")
+    from PIL import ImageFont
+
+    from karyoplot.core.fonts import pil_font
+
+    f = pil_font(40, family="NotAFamily", fallback="DefinitelyNotAFont")
+    assert isinstance(f, ImageFont.FreeTypeFont)  # scalable, not the bitmap default
+    assert f.size == 40
+
+
 # ----- theme -----
 
 
