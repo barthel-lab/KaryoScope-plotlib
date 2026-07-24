@@ -479,6 +479,58 @@ def test_plot_volcano_labels_points_and_writes_files(tmp_path: Path):
     assert Path(svg).exists() and Path(png).exists()
 
 
+def test_plot_volcano_infinite_fc_does_not_stretch_axis(tmp_path: Path, monkeypatch):
+    """An infinite fold change is drawn at the edge, not left to balloon the x-axis."""
+    import karyoplot.mpl.comparison as comp
+    from karyoplot.mpl.comparison import plot_volcano
+
+    captured: dict = {}
+    real_save = comp.save_fig
+
+    def spy(fig, prefix, suffix):
+        ax = fig.axes[0]
+        captured["xlim"] = ax.get_xlim()
+        captured["xs"] = [
+            float(c.get_offsets()[0][0]) for c in ax.collections if len(c.get_offsets())
+        ]
+        return real_save(fig, prefix, suffix)
+
+    monkeypatch.setattr(comp, "save_fig", spy)
+
+    cfg = _build_min_config(str(tmp_path))
+    stats = pd.DataFrame(
+        [
+            {"feature": "L1", "feature_label": "LINE-1", "log2FC": 1.0, "pooled_fisher_p": 1e-3},
+            {"feature": "Alu", "feature_label": "Alu", "log2FC": "inf", "pooled_fisher_p": 1e-6},
+        ]
+    )
+    out = plot_volcano(stats, cfg, str(tmp_path / "v"), "a", "b")
+    assert out is not None
+
+    lo, hi = captured["xlim"]
+    # Finite |FC| max is 1.0 -> axis ~ ±1.3, not the old fixed-cap ±6.5.
+    assert hi == pytest.approx(1.3, abs=0.01)
+    assert lo == pytest.approx(-1.3, abs=0.01)
+    # The infinite point is mapped to a finite edge coordinate sitting inside the axis.
+    assert all(np.isfinite(x) for x in captured["xs"])
+    assert max(captured["xs"]) < hi
+
+
+def test_plot_volcano_raw_float_inf_is_handled(tmp_path: Path):
+    """A raw float inf (not the stringified form) must not crash set_xlim."""
+    from karyoplot.mpl.comparison import plot_volcano
+
+    cfg = _build_min_config(str(tmp_path))
+    stats = pd.DataFrame(
+        [
+            {"feature": "L1", "feature_label": "LINE-1", "log2FC": 0.5, "pooled_fisher_p": 1e-3},
+            {"feature": "Alu", "feature_label": "Alu", "log2FC": float("-inf"), "pooled_fisher_p": 1e-5},
+        ]
+    )
+    out = plot_volcano(stats, cfg, str(tmp_path / "v"), "a", "b")
+    assert out is not None
+
+
 def test_place_labels_override_is_a_hard_pin():
     """A configured side/gap is applied verbatim, not treated as a mere preference."""
     import matplotlib.pyplot as plt

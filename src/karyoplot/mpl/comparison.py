@@ -189,9 +189,11 @@ def plot_volcano(
     colors = []
 
     for _, row in stats_df.iterrows():
-        fc = row["log2FC"]
-        if isinstance(fc, str):
-            fc = float(fc) if fc not in ("inf", "-inf") else (5.0 if fc == "inf" else -5.0)
+        # ``log2FC`` may arrive as a finite number, a numeric string, or "inf"/"-inf"
+        # (compare_two_conditions stringifies infinities). float() normalises all of
+        # them — including a raw float ``inf`` — so np.isfinite below is the single
+        # source of truth for "off scale", not the incoming type.
+        fc = float(row["log2FC"])
         p = row["pooled_fisher_p"]
         if p <= 0:
             p = 1e-300
@@ -201,8 +203,20 @@ def plot_volcano(
         labels.append(row["feature_label"])
         colors.append(config.feature_groups[row["feature"]].color)
 
-    fc_vals = np.array(fc_vals)
+    fc_vals = np.array(fc_vals, dtype=float)
     p_vals = np.array(p_vals)
+
+    # Infinite fold changes (a feature present in one condition and absent in the
+    # other) must not drive the x-scale: a single one would balloon the axis and
+    # leave every finite point squashed near zero. Scale from the finite values and
+    # park the infinities just inside the edge, drawn as off-scale triangles.
+    off_scale = ~np.isfinite(fc_vals)
+    finite_fc = fc_vals[~off_scale]
+    max_fc = max(np.abs(finite_fc).max() if finite_fc.size else 1.0, 1.0)
+    edge_x = max_fc * 1.18  # inside the ±max_fc*1.3 limit set below
+    # Replace ±inf with the signed edge position so scatter and label placement
+    # have a real coordinate to work with.
+    fc_vals = np.where(off_scale, np.sign(fc_vals) * edge_x, fc_vals)
 
     line_color = "#888888"
     ax.axhline(-np.log10(0.05), color=line_color, linestyle="--", linewidth=0.8, alpha=0.5)
@@ -210,9 +224,29 @@ def plot_volcano(
 
     edge_c = fg_color(config.dark_mode)
     for i in range(len(fc_vals)):
-        ax.scatter(
-            fc_vals[i], p_vals[i], color=colors[i], s=80, edgecolors=edge_c, linewidth=0.5, zorder=3
-        )
+        if off_scale[i]:
+            # A sideways triangle pointing off the plot: this reads as "runs off the
+            # axis", not as a literal fold change sitting near the edge.
+            ax.scatter(
+                fc_vals[i],
+                p_vals[i],
+                color=colors[i],
+                s=95,
+                marker=">" if fc_vals[i] > 0 else "<",
+                edgecolors=edge_c,
+                linewidth=0.5,
+                zorder=3,
+            )
+        else:
+            ax.scatter(
+                fc_vals[i],
+                p_vals[i],
+                color=colors[i],
+                s=80,
+                edgecolors=edge_c,
+                linewidth=0.5,
+                zorder=3,
+            )
 
     cond_a = config.conditions[cond_a_name]
     cond_b = config.conditions[cond_b_name]
@@ -220,8 +254,22 @@ def plot_volcano(
     ax.set_ylabel("−log₁₀(p-value)")  # noqa: RUF001 — display label: minus sign pairs with log₂ above
     ax.set_title(config.name)
 
-    max_fc = max(abs(fc_vals.min()), abs(fc_vals.max()), 1)
     ax.set_xlim(-max_fc * 1.3, max_fc * 1.3)
+    if off_scale.any():
+        # One neutral proxy handle explains what the triangles mean.
+        from matplotlib.lines import Line2D
+
+        proxy = Line2D(
+            [],
+            [],
+            marker=">",
+            linestyle="none",
+            markerfacecolor="none",
+            markeredgecolor=edge_c,
+            markersize=7,
+            label="present in one condition only",
+        )
+        ax.legend(handles=[proxy], loc="lower right", fontsize=7, frameon=False)
 
     # Labels sit beside their marker, so points hard against an edge need somewhere
     # for that label to go. Without this margin a point near y=0 has no room below
