@@ -461,6 +461,82 @@ def test_plot_volcano_returns_none_on_empty(tmp_path: Path):
     assert out is None
 
 
+def test_plot_volcano_labels_points_and_writes_files(tmp_path: Path):
+    """Non-empty stats exercise the _place_labels path and write both outputs."""
+    from karyoplot.mpl.comparison import plot_volcano
+
+    cfg = _build_min_config(str(tmp_path))
+    cfg.volcano_labels = {"LINE-1": {"side": "below"}, "Alu": {"side": "right", "gap": 7}}
+    stats = pd.DataFrame(
+        [
+            {"feature": "L1", "feature_label": "LINE-1", "log2FC": -1.2, "pooled_fisher_p": 1e-4},
+            {"feature": "Alu", "feature_label": "Alu", "log2FC": 0.8, "pooled_fisher_p": 1e-2},
+        ]
+    )
+    out = plot_volcano(stats, cfg, str(tmp_path / "v"), "a", "b")
+    assert out is not None
+    svg, png = out
+    assert Path(svg).exists() and Path(png).exists()
+
+
+def test_place_labels_override_is_a_hard_pin():
+    """A configured side/gap is applied verbatim, not treated as a mere preference."""
+    import matplotlib.pyplot as plt
+
+    from karyoplot.mpl.comparison import _SIDES, _place_labels
+
+    fig, ax = plt.subplots()
+    ax.set_xlim(-1, 1)
+    ax.set_ylim(0, 2)
+    fig.canvas.draw()
+
+    _place_labels(
+        ax,
+        fig,
+        xs=[0.0, 0.4],
+        ys=[1.0, 1.2],
+        labels=["A", "B"],
+        marker_size=80,
+        fontsize=9,
+        overrides={"A": {"side": "right", "gap": 7}},
+    )
+
+    ann = next(t for t in ax.texts if t.get_text() == "A")
+    ux, uy, ha, _va = _SIDES["right"]
+    assert ann.xyann == (ux * 7, uy * 7)
+    assert ann.get_ha() == ha
+    plt.close(fig)
+
+
+def test_place_labels_unknown_side_falls_back_to_auto_search():
+    """An unrecognised side is ignored so the label still gets placed automatically."""
+    import matplotlib.pyplot as plt
+
+    from karyoplot.mpl.comparison import _SIDES, _place_labels
+
+    fig, ax = plt.subplots()
+    ax.set_xlim(-1, 1)
+    ax.set_ylim(0, 2)
+    fig.canvas.draw()
+
+    _place_labels(
+        ax,
+        fig,
+        xs=[0.0],
+        ys=[1.0],
+        labels=["A"],
+        marker_size=80,
+        fontsize=9,
+        overrides={"A": {"side": "nonsense"}},
+    )
+
+    ann = next(t for t in ax.texts if t.get_text() == "A")
+    # The auto search only ever emits offsets drawn from _SIDES.
+    valid_offsets = {(ux * 10.0, uy * 10.0) for ux, uy, _ha, _va in _SIDES.values()}
+    assert tuple(ann.xyann) in valid_offsets
+    plt.close(fig)
+
+
 def test_plot_dot_strip_runs(tmp_path: Path):
     from karyoplot.mpl.comparison import plot_dot_strip
     from karyoplot.mpl.data_loader import compute_per_sample_rates, load_annotations
