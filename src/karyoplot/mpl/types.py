@@ -143,3 +143,9 @@ class ComparisonConfig:
     #: ``None`` keeps the literal (non-hierarchy) behavior. karyoplot stays DB-agnostic:
     #: it receives this resolved map, never a hierarchy file.
     feature_descendants: dict[str, list[str]] | None = None
+    #: Per-label volcano placement overrides, ``{feature_label: {"side": ..., "gap": ...}}``.
+    #: ``side`` is one of ``left``/``right``/``above``/``below`` or a diagonal
+    #: (``above-left`` etc.) and pins the label there unconditionally; ``gap`` is the
+    #: marker-centre-to-label distance in points. Labels absent from the map (and any
+    #: entry without a ``side``) are placed by the automatic collision search.
+    volcano_labels: dict[str, dict] | None = None

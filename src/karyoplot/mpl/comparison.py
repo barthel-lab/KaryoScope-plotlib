@@ -31,6 +31,140 @@ def _arcsin_sqrt(pct):
     return np.arcsin(np.sqrt(np.clip(pct / 100.0, 0, 1)))
 
 
+#: Where a label may sit relative to its marker: a unit direction from the marker
+#: centre plus the text alignment that makes the label grow *away* from it. Scaled
+#: by the gap (in points) at placement time.
+_SIDES = {
+    "right": (1.0, 0.0, "left", "center_baseline"),
+    "left": (-1.0, 0.0, "right", "center_baseline"),
+    "above": (0.0, 0.9, "center", "bottom"),
+    "below": (0.0, -0.9, "center", "top"),
+    "above-right": (0.8, 0.7, "left", "bottom"),
+    "above-left": (-0.8, 0.7, "right", "bottom"),
+    "below-right": (0.8, -0.7, "left", "top"),
+    "below-left": (-0.8, -0.7, "right", "top"),
+}
+
+#: Preference order when no override is given. Right and left come first so
+#: neighbouring points settle onto opposite flanks instead of stacking vertically.
+_SIDE_ORDER = (
+    "right",
+    "left",
+    "above",
+    "below",
+    "above-right",
+    "above-left",
+    "below-right",
+    "below-left",
+)
+
+#: Default marker-centre-to-label gap, in points.
+_LABEL_GAP = 10.0
+
+
+def _overlap(a, b) -> float:
+    """Area shared by two ``(x0, y0, x1, y1)`` boxes, 0 when they are disjoint."""
+    dx = min(a[2], b[2]) - max(a[0], b[0])
+    dy = min(a[3], b[3]) - max(a[1], b[1])
+    return dx * dy if dx > 0 and dy > 0 else 0.0
+
+
+def _place_labels(
+    ax,
+    fig,
+    xs,
+    ys,
+    labels,
+    *,
+    marker_size: float,
+    fontsize: float,
+    overrides: dict[str, dict] | None = None,
+    pad: float = 2.0,
+):
+    """Draw each label immediately beside its own marker, without leader lines.
+
+    Every label is anchored to its point by a small fixed offset in *points*, so it
+    reads as belonging to that marker at any figure size. For each label the
+    sides in :data:`_SIDE_ORDER` are tried in order and the first one that stays
+    inside the axes and collides with nothing already drawn wins; if every side
+    collides, the least-bad one is used. Because right and left are tried first,
+    two adjacent points naturally end up labelled on opposite flanks.
+
+    Args:
+        overrides: optional ``{label: {"side": ..., "gap": ...}}`` map. ``side`` is a
+            key of :data:`_SIDES` and is a *hard pin* — the search is skipped and the
+            label is placed there even if it collides. ``gap`` overrides the
+            marker-centre-to-label distance in points (default :data:`_LABEL_GAP`);
+            below roughly the marker radius the text overlaps its own marker. Either
+            key may be omitted.
+    """
+    overrides = overrides or {}
+    renderer = fig.canvas.get_renderer()
+    ax_box = ax.get_window_extent(renderer)
+    # ``marker_size`` is an area in pt²; convert its radius to display pixels.
+    marker_r = np.sqrt(marker_size / np.pi) / 72 * fig.dpi
+
+    points = [ax.transData.transform((x, y)) for x, y in zip(xs, ys, strict=True)]
+    # Markers are obstacles for every label, including their own.
+    blockers = [(px - marker_r, py - marker_r, px + marker_r, py + marker_r) for px, py in points]
+
+    # Place the most significant points first: they are the ones a reader looks
+    # for, so they get their preferred side and the crowded floor of the plot
+    # takes the leftovers.
+    for i in sorted(range(len(labels)), key=lambda k: -ys[k]):
+        override = overrides.get(labels[i], {})
+        gap = float(override.get("gap", _LABEL_GAP))
+        # An explicitly configured side is a hard pin, not a preference: the caller has
+        # chosen it deliberately, so a tight gap that grazes the marker must not cause
+        # the collision search to silently relocate the label to another side.
+        preferred = override.get("side")
+        order = (preferred,) if preferred in _SIDES else _SIDE_ORDER
+
+        scored = []
+        for side in order:
+            ux, uy, ha, va = _SIDES[side]
+            dx, dy = ux * gap, uy * gap
+            probe = ax.annotate(
+                labels[i],
+                xy=(xs[i], ys[i]),
+                xytext=(dx, dy),
+                textcoords="offset points",
+                ha=ha,
+                va=va,
+                fontsize=fontsize,
+            )
+            bb = probe.get_window_extent(renderer)
+            probe.remove()
+            box = (bb.x0 - pad, bb.y0 - pad, bb.x1 + pad, bb.y1 + pad)
+            spill = (
+                max(0.0, ax_box.x0 - box[0])
+                + max(0.0, box[2] - ax_box.x1)
+                + max(0.0, ax_box.y0 - box[1])
+                + max(0.0, box[3] - ax_box.y1)
+            )
+            penalty = sum(_overlap(box, b) for b in blockers) + spill * 1000
+            scored.append((penalty, side, (dx, dy, ha, va), box))
+            if penalty == 0:
+                break
+
+        penalty, side, (dx, dy, ha, va), box = min(scored, key=lambda s: s[0])
+        logger.debug(
+            "volcano label %r -> side=%s gap=%.1f penalty=%.0f", labels[i], side, gap, penalty
+        )
+        ax.annotate(
+            labels[i],
+            xy=(xs[i], ys[i]),
+            xytext=(dx, dy),
+            textcoords="offset points",
+            ha=ha,
+            va=va,
+            fontsize=fontsize,
+            zorder=4,
+        )
+        # Placed labels block later ones, so nothing is drawn on top of anything.
+        blockers.append(box)
+
+
 def plot_volcano(
     stats_df: pd.DataFrame,
     config: ComparisonConfig,
@@ -46,7 +180,6 @@ def plot_volcano(
         return None
 
     import matplotlib.pyplot as plt
-    from adjustText import adjust_text
 
     fig, ax = plt.subplots(figsize=(7, 6))
 
@@ -81,42 +214,6 @@ def plot_volcano(
             fc_vals[i], p_vals[i], color=colors[i], s=80, edgecolors=edge_c, linewidth=0.5, zorder=3
         )
 
-    texts = [
-        ax.text(fc_vals[i], p_vals[i], labels[i], fontsize=9, ha="center", va="center")
-        for i in range(len(fc_vals))
-    ]
-
-    adjust_text(
-        texts,
-        x=fc_vals,
-        y=p_vals,
-        ax=ax,
-        force_text=(1.0, 2.0),
-        force_points=(2.0, 2.0),
-        force_explode=(1.5, 2.0),
-        expand=(2.0, 2.0),
-        ensure_inside_axes=True,
-    )
-
-    # Connector lines for displaced labels
-    fig.canvas.draw()
-    renderer = fig.canvas.get_renderer()
-    marker_radius_px = np.sqrt(80) / 72 * fig.get_dpi()
-    min_dist = marker_radius_px * 3
-    for i, txt in enumerate(texts):
-        pt_disp = ax.transData.transform((fc_vals[i], p_vals[i]))
-        bbox = txt.get_window_extent(renderer)
-        cx = max(bbox.x0, min(pt_disp[0], bbox.x1))
-        cy = max(bbox.y0, min(pt_disp[1], bbox.y1))
-        dist = np.hypot(cx - pt_disp[0], cy - pt_disp[1])
-        if dist > min_dist:
-            ax.annotate(
-                "",
-                xy=(fc_vals[i], p_vals[i]),
-                xytext=txt.get_position(),
-                arrowprops=dict(arrowstyle="-", color=edge_c, lw=0.5, shrinkA=5, shrinkB=3),
-            )
-
     cond_a = config.conditions[cond_a_name]
     cond_b = config.conditions[cond_b_name]
     ax.set_xlabel(f"log₂(fold change)\n{cond_a.label} enriched  |  {cond_b.label} enriched")
@@ -126,7 +223,27 @@ def plot_volcano(
     max_fc = max(abs(fc_vals.min()), abs(fc_vals.max()), 1)
     ax.set_xlim(-max_fc * 1.3, max_fc * 1.3)
 
+    # Labels sit beside their marker, so points hard against an edge need somewhere
+    # for that label to go. Without this margin a point near y=0 has no room below
+    # it and its label is pushed sideways onto a neighbouring marker instead.
+    p_span = p_vals.max() - p_vals.min() or 1.0
+    ax.set_ylim(p_vals.min() - p_span * 0.10, p_vals.max() + p_span * 0.08)
+
+    # Labels are anchored to their markers in display space, so the axes transform
+    # has to be final — limits set, layout done — before anything is measured.
     fig.tight_layout()
+    fig.canvas.draw()
+    _place_labels(
+        ax,
+        fig,
+        fc_vals,
+        p_vals,
+        labels,
+        marker_size=80,
+        fontsize=9,
+        overrides=config.volcano_labels,
+    )
+
     return save_fig(fig, output_prefix, "volcano")
 
 
