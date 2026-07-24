@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Bundled figure font: Liberation Sans** (SIL OFL 1.1, metric-compatible with Arial),
+  shipped as package data in `karyoplot/data/fonts/` with its LICENSE/AUTHORS.
+  `core.fonts.register_vendored_fonts()` registers it with matplotlib so figures render
+  in the same typeface on every host — no system-font install, no license-encumbered
+  brand fonts, fully reproducible. This is the intended default for publication figures.
 - `ComparisonConfig.volcano_labels` — an optional `{feature_label: {"side": ..., "gap": ...}}`
   map that pins individual volcano labels to a chosen side/distance. karyoplot stays
   DB-agnostic (it receives the resolved map, never a database).
@@ -22,6 +27,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Figures now default to the bundled Liberation Sans** instead of the optional Barthel
+  brand font. `mpl.style.apply_default_style` sets `font.family = ["Liberation Sans",
+  "DejaVu Sans"]` (DejaVu kept as the secondary family for Greek/subscript glyphs), and
+  `core.fonts.pil_font` defaults to Liberation Sans for raster output. The commercial
+  Basic Sans/Bicyclette fonts remain an explicit opt-in via `register_fonts` (with a
+  `$BARTHEL_FONT_DIR` override) but are no longer the default, since they can't be
+  vendored/redistributed and previously fell back silently to DejaVu off the author's Mac.
 - **Volcano label placement rewritten** to sit each label immediately beside its own
   marker via a deterministic greedy side-search (no `adjustText`, no leader lines) —
   reproducible across figure sizes, and overridable per label via

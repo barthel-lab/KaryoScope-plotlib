@@ -1,10 +1,11 @@
 """matplotlib defaults: font registration + dark/light rcParams.
 
-Wraps :mod:`karyoplot.core.fonts` so that the same Basic Sans / Bicyclette
-opt-in path is used by both the SVG and matplotlib backends. When the
-Barthel fonts aren't available the matplotlib font.family falls back to
-``["sans-serif", "DejaVu Sans"]`` (DejaVu provides Greek glyphs needed
-for β/gamma labels).
+Wraps :mod:`karyoplot.core.fonts`. Figures render in the bundled, freely-licensed
+**Liberation Sans** (registered from package data, so they reproduce identically on
+any host), with **DejaVu Sans** kept as the secondary family for the Greek letters,
+subscripts, and minus sign some labels use (beta/gamma, log2, -log10 axis titles).
+If the bundled font can't be loaded, the family falls back to
+``["sans-serif", "DejaVu Sans"]``.
 
 Examples:
     >>> from karyoplot.mpl import style
@@ -13,7 +14,7 @@ Examples:
 
 from __future__ import annotations
 
-from ..core.fonts import DEFAULT_FONT_FAMILY, register_fonts
+from ..core.fonts import DEFAULT_FONT_FAMILY, VENDORED_FONT_FAMILY, register_vendored_fonts
 
 
 def apply_default_style(dark_mode: bool = False) -> None:
@@ -27,9 +28,9 @@ def apply_default_style(dark_mode: bool = False) -> None:
     """
     import matplotlib.pyplot as plt
 
-    registered = register_fonts()
-    if "Basic Sans" in registered:
-        plt.rcParams["font.family"] = ["Basic Sans", "DejaVu Sans"]
+    registered = register_vendored_fonts()
+    if VENDORED_FONT_FAMILY in registered:
+        plt.rcParams["font.family"] = [VENDORED_FONT_FAMILY, "DejaVu Sans"]
     else:
         plt.rcParams["font.family"] = [DEFAULT_FONT_FAMILY, "DejaVu Sans"]
 
