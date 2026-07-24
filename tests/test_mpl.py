@@ -92,6 +92,8 @@ def test_apply_default_style_runs(tmp_path: Path):
     style.apply_default_style(dark_mode=False)
     assert plt.rcParams["font.size"] == 10
     assert plt.rcParams["axes.spines.top"] is False
+    # Figures default to the bundled Liberation Sans, with DejaVu kept for Greek/subscripts.
+    assert list(plt.rcParams["font.family"]) == ["Liberation Sans", "DejaVu Sans"]
 
 
 def test_fg_color():

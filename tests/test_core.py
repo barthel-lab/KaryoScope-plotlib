@@ -158,6 +158,42 @@ def test_register_fonts_missing_dir(tmp_path: Path):
     assert register_fonts(tmp_path / "no_such_dir") == []
 
 
+def test_vendored_font_dir_ships_liberation_sans():
+    """The bundled OFL font files are present in package data."""
+    from karyoplot.core.fonts import _vendored_font_dir
+
+    d = _vendored_font_dir()
+    assert d is not None and d.is_dir()
+    names = {p.name for p in d.glob("LiberationSans-*.ttf")}
+    assert "LiberationSans-Regular.ttf" in names
+    assert (d / "LiberationSans-LICENSE.txt").exists()
+
+
+def test_register_vendored_fonts_registers_liberation_sans():
+    pytest.importorskip("matplotlib")
+    from karyoplot.core.fonts import (
+        VENDORED_FONT_FAMILY,
+        is_available,
+        register_vendored_fonts,
+    )
+
+    registered = register_vendored_fonts()
+    assert VENDORED_FONT_FAMILY in registered
+    assert is_available(VENDORED_FONT_FAMILY)
+
+
+def test_pil_font_prefers_vendored_liberation_sans():
+    """The default family loads the bundled scalable Liberation Sans, not a bitmap."""
+    pytest.importorskip("matplotlib")
+    from PIL import ImageFont
+
+    from karyoplot.core.fonts import pil_font
+
+    f = pil_font(24)  # default family == "Liberation Sans"
+    assert isinstance(f, ImageFont.FreeTypeFont)
+    assert f.getname()[0] == "Liberation Sans"
+
+
 def test_default_font_family_is_sans_serif():
     from karyoplot.core.fonts import DEFAULT_FONT_FAMILY
 

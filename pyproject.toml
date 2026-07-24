@@ -81,6 +81,9 @@ include = [
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/karyoplot"]
+# Bundled figure font (Liberation Sans, OFL 1.1) + its license/authors. Force-included
+# so the binaries ship even when the build can't consult VCS to enumerate files.
+artifacts = ["src/karyoplot/data/fonts/*.ttf", "src/karyoplot/data/fonts/*.txt"]
 
 # --- ruff (linter + formatter) ---
 # Config mirrors the sibling KaryoScope-analysis repo so the ecosystem lints
